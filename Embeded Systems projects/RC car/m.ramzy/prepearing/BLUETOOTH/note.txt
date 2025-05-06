@@ -1,0 +1,2 @@
+we need here to use an andorid app to connect with computer's blutooth then send
+from it the instructions.

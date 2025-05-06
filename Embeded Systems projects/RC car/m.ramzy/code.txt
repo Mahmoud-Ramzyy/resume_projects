@@ -1,0 +1,25 @@
+
+ d1=100; // width in cm
+ d2=400 ;// length in cm
+ t1=d1/90.0; // time for width
+ t2=d2/90.0; //time for length
+ for (i=0;i<2;i++)
+ {
+ analogWrite(S1,255); analogWrite(S2,255);
+ forward();
+ delay (t2*pow(10, 3));
+ 
+  analogWrite(S1,255); analogWrite(S2,255);
+  right();
+  delay(250*1.7);
+  analogWrite(S1,255); analogWrite(S2,255);
+  forward();
+  delay (t1*pow(10, 3));
+   
+   analogWrite(S1,255); analogWrite(S2,255);
+  right();
+  delay(250*1.7));}
+  Stop ();
+ delay(25000);
+ 
+   //circle
