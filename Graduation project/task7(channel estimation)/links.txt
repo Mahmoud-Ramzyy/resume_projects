@@ -1,0 +1,12 @@
+Lms(least mean square) algorithm design using vhdl:
+
+https://www.edaboard.com/showthread.php?356233-Lms(least-mean-square)-algorithm-design-using-vhdl
+
+concept:
+
+https://www.mathworks.com/help/lte/ug/channel-estimation.html
+
+
+generate pilot(ref signal):
+
+http://literature.cdn.keysight.com/litweb/pdf/ads2008/3gpplte/ads2008/LTE_DL_Pilot_(Downlink_Pilot_Generator).html

@@ -1,0 +1,8 @@
+https://ww2.mathworks.cn/help/lte/ref/ltedlchannelestimate.html#bu4u82u_head
+
+..Extract the reference signals, or pilot symbols, for a transmit-receive antenna pair from the received grid. Use the reference signals to calculate the least-squares estimates of the channel response at the pilot symbol positions within a received grid.
+
+The function obtains the least-squares estimates of the reference signals by dividing the received pilot symbols by their expected value. Any system noise affects the least-squares estimates. Remove or reduce the noise to achieve a reasonable estimation of the channel at pilot symbol locations. For more information
+
+
+

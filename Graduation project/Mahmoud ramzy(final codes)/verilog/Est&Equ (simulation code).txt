@@ -1,0 +1,363 @@
+module tst1 (iout,qout,rbnum); //represents the out data from prev blocks to feed my main block by it
+ parameter subcarrier=12;
+ parameter symbol=14;
+ parameter word=16;  //# bits per word
+ output [word*subcarrier*symbol-1:0] iout,qout;
+ output reg [2:0] rbnum;
+  reg [word-1:0] iRB [subcarrier*symbol-1:0];
+  reg [word-1:0] qRB [subcarrier*symbol-1:0];
+  
+  integer j;
+  initial 
+begin 
+ rbnum=0; //there's 6 resourse block in subframe
+ $readmemb("I_grid.txt",iRB );
+ $readmemb("Q_grid.txt",qRB );
+  for (j=0;j<10;j=j+1)     
+ $display ("Memory [%0d]=%b",j,iRB[j]);
+end
+  genvar i;  //flatting the grid
+  generate for (i = 0; i < subcarrier*symbol; i = i+1) begin:instmem
+    assign iout[word*i +: word] = iRB[i]; 
+	 assign qout[word*i +: word] = qRB[i]; 
+  end endgenerate
+
+ 
+endmodule 
+//*********************************************************************************************************************
+//                                   THE CHANNEL ESTIMATION CODE
+//                     ###############################################################
+module Estimation (I_in,Q_in,RB_num);
+parameter subcarrier=12;//
+parameter symbol=14;
+parameter slotsym=7; //number of ofdm symbols per slot (for normal but if extended =6)
+parameter ID=5;  //let cell id =24 (0-->510) 
+parameter word=16;  //# bits per word
+parameter fraction=14; //# of bits for for fraction part
+parameter exponent=word-fraction-1;
+//parameter sign=16'b0001<<exponent; // the base postion of sign bit 
+parameter int_upper=(2*fraction)+exponent; //upper limit of # int bits
+//parameter int_lower=(2*fraction);  ////lower limit of # int bits
+parameter subpos=5; // which subcarrier contains a first ref signal depnding on modulo 6 cell id
+parameter sympos=0; // which ofdm symbol contains a first ref signal depending on frame type(normal or extended)
+parameter no_ref=8; //number of ref sig in one resource block
+parameter no_Avg=4; //number of avg estimated values in one resource block
+//parameter rf_rb=6;//number of  resource blocks in subframe
+parameter half=16'h0001<<fraction-1; //the eqv Q format for 1/2
+parameter signed one_third=16'h5555>>>(15-fraction+1);//the value of 1/3 in Q15 format,shift is used to convert into used Q
+parameter quarter=16'h0001<<(fraction-2); //value of 1/4
+inout [word*subcarrier*symbol-1:0] I_in,Q_in;  //I&Q data
+//input clk;
+inout [2:0] RB_num; //to inform the EQualizer from which resource block this estimation
+//output [word*symbol-1:0] I_EST,Q_EST;
+reg signed [word-1:0] I_x [0:no_ref-1];  // I data of ref signals
+reg signed [word-1:0] Q_x [0:no_ref-1];  //Q data of ref data
+reg signed [word-1:0] I_h [0:subcarrier-1]; //Inphase response of estimated channel (interpolation will be here)
+reg signed [word-1:0] Q_h [0:subcarrier-1]; //Quad response of estimated channel
+reg signed [word-1:0] I_RB[0:subcarrier-1][0:symbol-1]; //resource block (just to check if we capture the correct word
+reg signed [word-1:0] Q_RB[0:subcarrier-1][0:symbol-1]; //that represnts the pilot or not
+reg signed [word-1:0] Avg_I [0:symbol-1]; // the coloumn vector that will avg estimated values on it then interpolate
+reg signed [word-1:0] Avg_Q [0:symbol-1];// inside it to replicated and used as the channel estimate for the entire resource grid.
+integer i,j,N; //i and j are var for loops iteration ,N:used in eqn of extracting pilots
+reg [2:0] y; //y is counter for known rf and first pos is the first carrier in grid contains rf
+reg signed [word-1:0] temp,temp2,temp3,temp4,temp5; //temporary reg to save word in them while do calc of LSE
+//reg [31:0] tmp;
+
+
+//***********************************************************************
+task Qmult;  //to convert 32 single point into fixed point
+  input [word-1:0] a,b;
+  output [word-1:0] out; //extra bit for sign
+  reg [(2*word)-1:0] temp;
+  begin
+     // N=(2*fraction)+exponent; //upper limit of # int bits
+		if ((a[15]==1) && (b[15]==0)) //first i/p is -ve &2nd is +ve
+		begin
+		  a=(~a)+1;  //2's comp to make it +ve
+		  temp=a*b; //now (+ve * +ve)
+		  //temp=temp+sign;
+		  temp=(~temp)+1;//convert it to negative as supposed to be
+		  out=temp[int_upper:fraction];
+		end
+		else if ((b[15]==1) && (a[15]==0)) //first i/p is +ve &2nd is -ve
+      begin
+		  b=(~b)+1;  //2's comp to make it +ve
+		  temp=a*b;
+		  temp=(~temp)+1;//convert it to negative as supposed to be
+		  out=temp[int_upper:fraction];		  
+		end
+		else if ((b[15]==1) && (a[15]==1)) //both inputs are -ve
+		begin
+        a=(~a)+1;
+		  b=(~b)+1;
+		  temp=a*b;
+		  out=temp[int_upper:fraction];
+		end
+     	else
+		begin
+		  temp=a*b; //according to # int & fractions we keep only the int before and after the point
+		  out=temp[int_upper:fraction];
+		end
+  end	  
+endtask
+//****************************************************************
+// no need to it in estimation as we always has a divisor =1 ---> ref (1/root2)^2 *2
+task Qdiv;  //to convert 32 single point into fixed point
+  input signed [word-1:0] a,b; //a is Dividend & b is divisor
+  output [word-1:0] out; 
+  //parameter f_bits=14; //current # bits for fraction (word-int bits)
+  //parameter req_bits=9; //# required bits to dec frac bits to [max bits for frac(word-1)-5] 
+  reg [(2*word)-1:0] temp;
+  begin
+	 if (a==b)
+	   out =16'h0001<<fraction;  //check if equals =1 in Q14 format
+	 else if (a==(-1*b)) begin
+	    out =16'h0001<<fraction;
+		 out=(~out)+1;  // a=-b equals=-1 in Q14 format
+	 end
+	else begin //15 as its max possible # of fraction bits &10 as we need to mult the Dividend by 1000
+	  if (a[15]==1 && b[15]==1) begin
+	    a=(~a)+1;
+	    a=a>>>(fraction-(15-10)); //to decrese the range of fraction from 14 to 5
+		 a=a<<10;
+		 temp= a[(word-1):0]+{11'b0,1'b1,4'b0}; // a need to rounding (it must be applied)
+	    a=temp[15:5];   //take the integer bits only
+		 b=(~b)+1;
+		 b=b>>>(fraction-(15-10)); //as i want to to  mult by 1000 later--> 10 bits(2^10=1024)		 
+		 out=a/b;
+     end
+     else if  (a[15]==1 && b[15]==0) begin
+	    a=(~a)+1;
+	    a=a>>>(fraction-(15-10)); //to decrese the range of fraction from 14 to 5
+		 a=a<<10;
+		 temp= a[(word-1):0]+{11'b0,1'b1,4'b0}; // a need to rounding (it must be applied)
+	    a=temp[15:5];   //take the integer bits only
+		 //b=(~b)+1;
+		 b=b>>>(fraction-(15-10)); //as i want to to  mult by 1000 later--> 10 bits(2^10=1024)		 
+		 out=a/b;
+		 out=(~out)+1;
+	  end
+     else if  (b[15]==1 && a[15]==0) begin
+	    //a=(~a)+1;
+	    a=a>>>(fraction-(15-10)); //to decrese the range of fraction from 14 to 5
+		 a=a<<10;
+		 temp= a[(word-1):0]+{11'b0,1'b1,4'b0}; // a need to rounding (it must be applied)
+	    a=temp[15:5];   //take the integer bits only
+		 b=(~b)+1;
+		 b=b>>>(fraction-(15-10)); //as i want to to  mult by 1000 later--> 10 bits(2^10=1024)		 
+		 out=a/b;
+		 out=(~out)+1;
+	  end
+     else  begin
+	    //a=(~a)+1;
+	    a=a>>>(fraction-(15-10)); //to decrese the range of fraction from 14 to 5
+		 a=a<<10;
+		 temp= a[(word-1):0]+{11'b0,1'b1,4'b0}; // a need to rounding (it must be applied)
+	    a=temp[15:5];   //take the integer bits only
+		 //b=(~b)+1;
+		 b=b>>>(fraction-(15-10)); //as i want to to  mult by 1000 later--> 10 bits(2^10=1024)		 
+		 out=a/b;
+		 //out=(~out)+1;
+	  end	  
+	 out=out<<(fraction-(15-10)); //back it to the main Q format again like 
+	end
+  end	  
+ endtask
+//*****************************************************************
+  initial //comment them to be synth
+  begin	
+   //temp2={(~temp2[3:2]),temp2[1:0]};  3=word 2=#fractions -1  1=fractions
+	y=3'b000;
+   $readmemb("I_ref.txt", I_x);
+   $readmemb("Q_ref.txt", Q_x);
+#2 $display ("Est=%x",I_h[2]);
+	 $display ("QEst=%x",Q_h[5]);
+	 $display ("temp=%x",temp);
+    $display ("temp=%b",temp);
+	 $display ("temp2=%b",temp2);
+	 $display ("temp2=%x",temp2);
+    $display ("temp3=%b",temp3);	
+	 $display ("temp3=%x",temp3);
+	 $display ("temp4=%b",temp4);
+	 $display ("temp4=%x",temp4);
+	 $display ("temp5=%b",temp5);
+	 $display ("temp5=%x",temp5);
+  end
+  tst1 inst_1 (.iout(I_in), .qout(Q_in), .rbnum(RB_num));
+  always @ * //check Unexpected event in always block sensitivity list.
+  begin  
+  //unflatting the grid again
+    for (j = 0; j < subcarrier ; j = j+1)  begin//to rearrange inputs stream into grid 
+	  for (i = 0; i < symbol ; i = i+1) //j for row while i for col
+	  begin
+	   N=((j*symbol)+i);
+      I_RB[j][i] = I_in[word*N +: word];
+		Q_RB[j][i] = Q_in[word*N +: word];
+	  end
+	 end
+	 
+	for (i = 0; i < subcarrier; i = i+1) begin //intialize est vectors with 0 just to be synthesizable
+	    I_h[i]=0;
+		 Q_h[i]=0;
+	end
+//*******************************************************************************************************************
+	//                                              ESTIMATION
+	//                                         ####################
+	//  starting search for ref in grid and apply the LSE then time averging in one step:
+	for (i = 0; i < subcarrier; i = i+1) //i for row while j for col
+		 for (j = 0; j < symbol; j = j+1)
+		 begin 		     
+			  if ( ((j==sympos)||(j==sympos+slotsym)) && ((i==subpos)||(i==subpos+6))) begin//0,7,5,11
+			   temp=0;
+				temp5=0;
+			   N=((i*symbol)+j);
+//real_prat:			
+			   temp3 = I_in[word*N +: word];  //=I_RB etxract ref from input stream
+			   temp4 = Q_in[word*N +: word];  //=Q_RB			   
+			   Qmult(temp3,I_x[y],temp);
+				Qmult(temp4,Q_x[y],temp5);
+				temp=temp+temp5;
+				if (I_h[i]!=0)  //that means this is the second time this index be declared
+				 Qmult(I_h[i]+temp,half,I_h[i]);//get the avg
+				else 
+				 I_h[i]=temp;  //insert the first estimated value
+// img_part:	 				 
+			   Qmult(temp4,I_x[y],temp2);
+				Qmult(temp3,Q_x[y],temp5);
+				temp2=temp2-temp5;	
+				if (Q_h[i]!=0) begin
+				 Qmult(Q_h[i]+temp2,half,Q_h[i]); //avg as 2 est values at same subcarrier
+             y=y+3'b001; //are added then mult by 1/2 
+				end
+				else
+				 Q_h[i]=temp2;
+			  end
+			  else if ( (j==sympos+(slotsym-3)||j==sympos+(symbol-3)) && (i==subpos-3||i==subpos+3)) begin //4,11,2,8
+            temp=0;
+            temp5=0;				
+			   N=((i*symbol)+j);
+// real part:
+			   temp3 = I_in[word*N +: word];  //=I_RB etxract ref from input stream
+			   temp4 = Q_in[word*N +: word];  //=Q_RB			   
+			   Qmult(temp3,I_x[y],temp);
+				Qmult(temp4,Q_x[y],temp5);
+				temp=temp+temp5;
+				if (I_h[i]!=0)  //that means this is the second time this index be declared
+				 Qmult(I_h[i]+temp,half,I_h[i]);//get the avg
+				else 
+				 I_h[i]=temp;  //insert the first estimated value
+// img part:				 
+			   Qmult(temp4,I_x[y],temp2);
+				Qmult(temp3,Q_x[y],temp5);
+				temp2=temp2-temp5;
+				if (Q_h[i]!=16'h0000) begin
+				 Qmult(Q_h[i]+temp2,half,Q_h[i]); //avg as 2 est values at same subcarrier
+             y=y+3'b001; //are added then mult by 1/2 
+				end
+				else
+				 Q_h[i]=temp2;				
+           end
+			  else begin
+			   temp=16'b0;
+				temp2=16'b0;
+				temp5=16'b0;
+			  end
+			end
+//****************************************************************************************************************
+//the second averging: (freq avergin) as noise reduces by factor root of number of samples in avg each single avg
+	Qmult((I_h[subpos]+I_h[subpos+6]),half,Avg_I[sympos]);//avg the 2 estimated errors in first ofdm symbol
+	Qmult((Q_h[subpos]+Q_h[subpos+6]),half,Avg_Q[sympos]);
+	Qmult((I_h[subpos]+I_h[subpos+6]),half,Avg_I[sympos+slotsym]);
+	Qmult((Q_h[subpos]+Q_h[subpos+6]),half,Avg_Q[sympos+slotsym]);
+			
+	Qmult((I_h[subpos-3]+I_h[subpos+3]),half,Avg_I[sympos+(slotsym-3)]);//avg the 2 estimated errors in first ofdm symbol
+	Qmult((Q_h[subpos-3]+Q_h[subpos+3]),half,Avg_Q[sympos+(slotsym-3)]);
+	Qmult((I_h[subpos-3]+I_h[subpos+3]),half,Avg_I[sympos+(symbol-3)]);
+	Qmult((Q_h[subpos-3]+Q_h[subpos+3]),half,Avg_Q[sympos+(symbol-3)]);	
+	
+// ************************final step in Estimation(interpolation): using linear interpolation*********************************
+	
+	for (i = 0; i < symbol; i = i+1) begin
+	  if (i<(slotsym-3)-1) begin //-1 to prevent it from overwriting on avg estimated previousely 
+      if (symbol==14) begin //case of normal cp
+		   Qmult(Avg_I[(slotsym-3)]-Avg_I[sympos],quarter,Avg_I[i+1]); //instead of divide by 4
+			Qmult(Avg_Q[(slotsym-3)]-Avg_Q[sympos],quarter,Avg_Q[i+1]);
+		 end
+		 else begin //case of extended cp
+		   Qmult(Avg_I[sympos+(slotsym-3)]-Avg_I[sympos],one_third,Avg_I[i+1]); //instead of dividing by 3
+			Qmult(Avg_Q[sympos+(slotsym-3)]-Avg_Q[sympos],one_third,Avg_Q[i+1]);		    
+		 end
+		 Avg_I[i+1]=((i+1)*Avg_I[i+1])+Avg_I[sympos]; //the rest of linear eqn
+       Avg_Q[i+1]=((i+1)*Avg_Q[i+1])+Avg_Q[sympos];	//I&Q are done till the third ofdm symbol	 
+	  end
+	  else if (i>=(slotsym-3) && i<slotsym-1) begin
+	    Qmult(( Avg_I[slotsym]-Avg_I[(slotsym-3)] ),one_third,Avg_I[i+1]);
+		 Avg_I[i+1]=(((i+1)-(slotsym-3))*Avg_I[i+1])+Avg_I[(slotsym-3)];//I is done
+		 Qmult(( Avg_Q[slotsym]-Avg_Q[(slotsym-3)] ),one_third,Avg_Q[i+1]);
+		 Avg_Q[i+1]=(((i+1)-(slotsym-3))*Avg_Q[i+1])+Avg_Q[(slotsym-3)];//q is done till 6th ofdm symbol
+	  end
+	  else begin
+	    if (i==slotsym)begin //reach to end of first slot time
+		  for (j=0;j<=slotsym;j=j+1) begin //copy the values in first slot in the second one
+	      Avg_I[j+slotsym]=Avg_I[j];
+		   Avg_Q[j+slotsym]=Avg_Q[j];
+		  end
+		  i=symbol-1; //to out from for loop
+		 end
+		 else 
+		 i=i; //just do nothing
+	  end	  
+	end
+//********************************************************************************************************************
+//                                                Equalization
+//                                 #############################################
+    for (j = 0; j < subcarrier ; j = j+1)  begin//to rearrange inputs stream into grid 
+	  for (i = 0; i < symbol ; i = i+1) //j for row while i for col
+	  begin
+ //real part:
+      Qmult(I_RB[j][i],Avg_I[i],temp);
+		Qmult(Q_RB[j][i],Avg_Q[i],temp2);
+		temp3=temp+temp2;
+		Qmult(Avg_I[i],Avg_I[i],temp);
+		Qmult(Avg_Q[i],Avg_Q[i],temp2);
+      temp4=temp+temp2;
+		Qdiv(temp3,temp4,temp5);// don't overwrite on grid now we will need its value in img later
+ //Img part:
+      Qmult(Q_RB[j][i],Avg_I[i],temp);
+		Qmult(I_RB[j][i],Avg_Q[i],temp2);
+		temp3=I_RB[j][i]; //check if overwrritten or not
+		temp=temp-temp2;
+		//Q_RB[j][i]=temp-temp2;
+//		Qmult(Avg_I[i],Avg_I[i],temp3);  //no need to do these as we calc them once above
+//		Qmult(Avg_Q[i],Avg_Q[i],temp4); just care from overwritting on temp4
+      //temp5=temp3+temp4;
+		Qdiv(temp,temp4,Q_RB[j][i]); //finlly write the recovered data over the distorted one in grid
+		I_RB[j][i]=temp5;
+	  end
+	 end 
+//	 for (i = 0; i < subcarrier; i = i+1) begin //for rows
+//      for (j = 0; j < symbol ; j = j+1)   begin   //for col
+//       assign I_in[(word*i)+j +: word] = I_RB[i][j]; 
+//	    assign Q_in[(word*i)+j +: word] = Q_RB[i][j];
+//    end	 
+//  end
+//Qmult(16'hf1d1,16'h17be,temp4);	
+   //Qdiv(16'h1200,16'hf1d1,temp5);
+//temp4= Avg_I[13];
+end 
+//****************************************************************************************************************
+//                                        OUTPUT RECOVERD GRID 
+//                                   ###############################
+//  genvar r,c ;  //flatting the grid
+//  generate for (r = 0; r < subcarrier; r = r+1) begin:gen1 //for rows
+//    for (c = 0; c < symbol ; c = c+1)   begin:gen2   //for col
+//      assign I_in[(word*r)+c +: word] = I_RB[r][c]; 
+//	   assign Q_in[(word*r)+c +: word] = Q_RB[r][c];
+//    end	 
+//  end endgenerate
+ 	
+
+
+endmodule
+
+

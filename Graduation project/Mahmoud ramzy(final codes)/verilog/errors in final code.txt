@@ -1,0 +1,91 @@
+http://compgroups.net/comp.lang.verilog/ram_init_file-seems-to-not-be-working/2121680
+
+***********************************************************************************
+--->how to pass array values from module to another:
+
+https://stackoverflow.com/questions/16369698/how-to-pass-array-structure-between-two-verilog-modules
+
+https://stackoverflow.com/questions/23864216/verilog-what-this-statement-is-doing
+
+**********************************************************************************************************
+
+using for generate with 2 genvar:
+
+https://www.hdlworks.com/hdl_corner/verilog_ref/items/Genvar.htm
+
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+
+test bench: (use the same pattern later)
+
+https://stackoverflow.com/questions/55039421/read-and-write-array-from-txt-in-verilog
+
+https://stackoverflow.com/questions/25607124/test-bench-for-writing-verilog-output-to-a-text-file
+
+********************************************************************************************************
+
+good explanation for single to fixed:» ﬁ—— ⁄œœ «·›—Ìﬂ‘‰· » ” ⁄ «”«” «·„«Ã‰ ÌÊœ » «⁄ﬂ „„ﬂ‰ Ì Õœœ › ﬂ«„ »  ›⁄‰œ‰« › «·„ÊœÌ·Ì‘‰ «··Ì ‘€«·Ì‰ »ÌÂ »Ì ﬁ—— „‰ Ê«Õœ ·‰Ã › Ê«Õœ ›»Œ «— ⁄œœ «·» ” ﬂœÂ 31 ⁄‘«‰ «Õ’· ⁄ «›÷· ‰ ÌÃÂ „„ﬂ‰Â
+
+https://www.pathpartnertech.com/representing-decimal-data-in-q-format/
+
+000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+
+convert from float to fixed point and rounding:
+
+https://forums.xilinx.com/t5/Design-Entry/Conversion-of-floating-point-to-fixed-point-in-verilog/td-p/988264?fbclid=IwAR1-1RYFEG95JscMwwuHCvJSdWnIu7AGEA9pid1y9baWRl5G7AVOPVZyPKc
+
+https://zipcpu.com/dsp/2017/07/22/rounding.html#:~:text=One%20unbiased%20method%20of%20rounding,shown%20in%20Fig%205%20below.&text=In%20this%20case%2C%20we%20select,IWID%2DOWID%2D1)%7B!
+
+https://www.slideshare.net/RajeshSharma72/fixed-point-conversion
+
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+
+arthimatics of fixed points:
+
+https://timetoexplore.net/blog/fixed-point-numbers-in-verilog
+
+*****************************************************************************************************************
+memory problem why module work on resource block not complete subframe:
+
+-Using Block RAM in Spartan-3 Generation FPGAs
+Table 2 shows the available block RAM for Spartan-3E FPGAs. Each block RAM contains 18,432 bits of fast static RAM, 16K bits of which is allocated to data storage and, in some memory configurations, an additional 2K bits allocated to parity or additional "plus" data bits.
+
+-Your computerís main memory is called RAM. You can think of it as a workspace the computer uses to get work done. When you double-click on an app, or open a document, or, well, do much of anything, RAM gets used to store that data while the computer is working on it. Modern computers often come equipped with 4, 8, 16 or more gigabytes of RAM pre-installed.
+
+Thereís also storage: a hard disk drive or solid state drive where data is recorded and can stay indefinitely, to be recalled as necessary. That might be a tax return, a poem in a word processor, or an email. By comparison, RAM is volatile ó the information thatís put in there disappears when the power is turned off or when the computer is reset. Stuff written to disk stays there permanently until itís erased, or until the storage medium fails (more on that later).
+
+*********************************************************************************************************************
+interpolation:
+The 'TestEVM' pilot averaging method described in TS 36.141 [1], Annex F.3.4, requires the use of simple linear interpolation on the time-averaged and frequency-averaged column vector. The interpolation is one-dimensional, since it only estimates the values between the averaged pilot symbol subcarriers in the column vector. The resulting vector is then replicated and used as the channel estimate for the entire resource grid.
+
+https://www.mathworks.com/help/lte/ug/channel-estimation.html#bt56mq7
+
+https://www.mathworks.com/help/lte/ug/channel-estimation.html#bt16l93-1
+
+************************************************************************************************************************
+the shape of input to my block:
+**************************************************************************************************
+effect of averging on noise in signal:
+
+The more successive samples included in the average of a signal that remains constant, which also includes uncorrelated noise, will result in more reduction of the noise component. If the signal is dc, and the noise component is random, then with each successive sample averaged, the signal-to-noise ratio (SNR) will improve.In fact, it can be shown that the improvement is proportional to the square root of the number of samples in the average. The standard deviation of the average of a number of noisy samples of the same signal is the standard deviation of the original signal divided by the square root of N (the number of successive samples).
+
+the tradeoff here is that This will decrease the output data rate by a factor of N and increase the settling time of the measurement system. These results often are acceptable prices to pay for the increased resolution and stability of the results.
+
+https://www.electronicdesign.com/technologies/analog/article/21795659/understand-the-tradeoffs-of-increasing-resolution-by-averaging
+https://dsp.stackexchange.com/questions/19159/how-does-averaging-increase-the-signal-to-noise-ratio
+
+it doesn't matter if the avg in freq or time domain as:
+Fourier transform does not represent the histogram of the signal. Fourier transform is a linear transform that takes signal from time domain (complex function) to frequency domain (another complex function). It takes a complex function to another complex function.so any change on input will be the same on output so the averging before(time domain) or after(freq domain) we will get the same values.
+As for what you should do, you should take the Fourier transform of individual trials (via FFT), get the amplitude of individual trials, and a average them together.(that's our case we do fft on signal then do averging on them)
+
+https://dsp.stackexchange.com/questions/7527/fft-time-domain-average-vs-frequency-bin-average 
+
+https://www.allaboutcircuits.com/technical-articles/use-signal-averaging-to-increase-the-accuracy-of-your-measurements/
+note: the upper casesare valid for uncorrelated (random) noise that's not related to signal but in case of correlated the avg technique won't 
+suppress the noise.Ex on correlated noise(noise due to quantization in ADC).
+
+*****************************************************************************************
+part select of vector error 
+
+
+
+

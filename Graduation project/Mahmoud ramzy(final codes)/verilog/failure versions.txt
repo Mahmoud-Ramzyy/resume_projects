@@ -1,0 +1,1307 @@
+`timescale 1ns/1ps
+module LSE (I_in,Q_in,grid_row,grid_col,re_addr,I_out,Q_out);
+//parameter subcarrier=72;
+//parameter symbol=140;
+parameter no_ref=48;
+input [31:0] I_in,Q_in;
+input [7:0] grid_col;
+input [6:0] grid_row;
+//input read;
+input [5:0] re_addr;
+//input [2:0] RB; //resource block number
+output [31:0] I_out,Q_out;
+//reg [31:0] I_frame [0:symbol-1][0:subcarrier-1];
+//reg [31:0] Q_frame [0:symbol-1][0:subcarrier-1];
+reg [31:0] I_x [0:no_ref-1];
+reg [31:0] Q_x [0:no_ref-1];
+reg [31:0] I_h [0:no_ref-1];
+reg [31:0] Q_h [0:no_ref-1];
+integer i,j;
+initial 
+begin
+ $readmemb("xreal.txt", I_x);
+ $readmemb("ximg.txt", Q_x);
+  for (j=0;j<10;j=j+1)
+	$display ("Memory [%0d]=%b",j,I_x[j]);
+end
+always @(*)
+begin
+ if (grid_col==0 || grid_col==7) 
+ begin
+	 if (grid_row==0 || grid_row==6)
+	 begin //cmplx division
+      I_h[i]=((I_in*I_x[i])+(Q_in*Q_x[i]))/((I_x[i]*I_x[i])+(Q_x[i]*Q_x[i]));
+      Q_h[i]=((Q_in*I_x[i])-(I_in*Q_x[i]))/((I_x[i]*I_x[i])+(Q_x[i]*Q_x[i]));
+		i=i+1;
+	 end
+end
+ else if (grid_row==4 || grid_row==11)
+ begin
+	 if (grid_row==3 || grid_row==9)
+	 begin
+      I_h[i]=((I_in*I_x[i])+(Q_in*Q_x[i]))/((I_x[i]*I_x[i])+(Q_x[i]*Q_x[i]));
+      Q_h[i]=((Q_in*I_x[i])-(I_in*Q_x[i]))/((I_x[i]*I_x[i])+(Q_x[i]*Q_x[i]));
+		i=i+1;
+	 end
+end	
+end
+//always @(*) begin
+//  if (read)
+//  begin
+   assign I_out=I_h[re_addr];
+	assign Q_out=Q_h[re_addr];
+//  end
+//end
+endmodule
+
+****************version 2 of code *****************
+`timescale 1ns/1ps
+module LSE (I_in,Q_in,grid_row,grid_col,re_addr,I_out,Q_out);
+//parameter subcarrier=12;
+//parameter symbol=14;
+parameter no_ref=48;
+input [31:0] I_in,Q_in;
+input [7:0] grid_col; //for symbol axis
+input [6:0] grid_row;  //for subcarrier axis
+//input read;
+input [5:0] re_addr;
+//input [2:0] RB; //resource block number
+output [31:0] I_out,Q_out;
+//reg [31:0] I_frame [0:symbol-1][0:subcarrier-1];
+//reg [31:0] Q_frame [0:symbol-1][0:subcarrier-1];
+reg [31:0] I_x [0:no_ref-1];
+reg [31:0] Q_x [0:no_ref-1];
+reg [31:0] I_h [0:no_ref-1];
+reg [31:0] Q_h [0:no_ref-1];
+integer i,j;
+initial 
+begin
+ $readmemb("xreal.txt", I_x);
+ $readmemb("ximg.txt", Q_x);
+  for (j=0;j<10;j=j+1)
+	$display ("Memory [%0d]=%b",j,I_x[j]);
+end
+always @(*)
+begin
+ if (grid_col==0 || grid_col==7) 
+ begin
+	 if (grid_row==0 || grid_row==6)
+	 begin //cmplx division
+      I_h[i]=((I_in*I_x[i])+(Q_in*Q_x[i]))/((I_x[i]*I_x[i])+(Q_x[i]*Q_x[i]));
+      Q_h[i]=((Q_in*I_x[i])-(I_in*Q_x[i]))/((I_x[i]*I_x[i])+(Q_x[i]*Q_x[i]));
+		i=i+1;
+	 end
+end
+ else if (grid_row==4 || grid_row==11)
+ begin
+	 if (grid_row==3 || grid_row==9)
+	 begin
+      I_h[i]=((I_in*I_x[i])+(Q_in*Q_x[i]))/((I_x[i]*I_x[i])+(Q_x[i]*Q_x[i]));
+      Q_h[i]=((Q_in*I_x[i])-(I_in*Q_x[i]))/((I_x[i]*I_x[i])+(Q_x[i]*Q_x[i]));
+		i=i+1;
+	 end
+end	
+end
+//always @(*) begin
+//  if (read)
+//  begin
+   assign I_out=I_h[re_addr];
+	assign Q_out=Q_h[re_addr];
+//  end
+//end
+endmodule
+
+********* version 3 of code *******************
+
+
+`timescale 1ns/1ps
+module tst (I_in,Q_in,grid_row,grid_col,re_row,re_col,I_out,Q_out);
+parameter subcarrier=12;
+parameter symbol=14;
+parameter no_ref=48;
+input [31:0] I_in,Q_in;  //I&Q data
+input [7:0] grid_col; //for symbol axis
+input [6:0] grid_row;  //for subcarrier axis
+//input read;
+input [5:0] re_row,re_col;  //temp port for address of passing data after finisihing
+//input [2:0] RB; //resource block number
+output [31:0] I_out,Q_out;  //I&Q out data
+//reg [31:0] I_frame [0:symbol-1][0:subcarrier-1];
+//reg [31:0] Q_frame [0:symbol-1][0:subcarrier-1];
+reg [31:0] I_x [0:no_ref-1];  // I data of ref signals
+reg [31:0] Q_x [0:no_ref-1];  //Q data of ref data
+reg [31:0] I_h [0:subcarrier-1][0:symbol-1];  //Inphase response of estimated channel 
+reg [31:0] Q_h [0:subcarrier-1][0:symbol-1];  //Quad response of estimated channel 
+reg [31:0] I_RB [0:subcarrier-1][0:symbol-1]; //resource block
+reg [31:0] Q_RB [0:subcarrier-1][0:symbol-1]; //resource block
+integer i,j;
+initial 
+begin
+ $readmemb("xreal.txt", I_x);
+ $readmemb("ximg.txt", Q_x);
+//  for (j=0;j<10;j=j+1)
+//	$display ("Memory [%0d]=%b",j,I_x[j]);
+end
+always @(*)
+begin
+ I_RB[grid_row][grid_col]=I_in;
+ Q_RB[grid_row][grid_col]=Q_in;
+ if (grid_col==0 || grid_col==7) //searching for ref sig by known postions
+ begin
+	 if (grid_row==0 || grid_row==6)  //@ symbol (1&8) it exists @ subcarriers (1&7) 
+	 begin //cmplx division
+      I_h[grid_row][grid_col]=((I_in*I_x[i])+(Q_in*Q_x[i]))/((I_x[i]*I_x[i])+(Q_x[i]*Q_x[i]));
+      Q_h[grid_row][grid_col]=((Q_in*I_x[i])-(I_in*Q_x[i]))/((I_x[i]*I_x[i])+(Q_x[i]*Q_x[i]));
+		i=i+1;
+	 end
+	 else
+	 begin
+	   I_h[grid_row][grid_col]=32'bx1;
+		Q_h[grid_row][grid_col]=32'bx1;
+	 end
+ end
+ else if (grid_row==4 || grid_row==11)  //@ symbol (5&12) it exists @ subcarriers (4&10) 
+ begin
+	 if (grid_row==3 || grid_row==9)
+	 begin
+      I_h[grid_row][grid_col]=((I_in*I_x[i])+(Q_in*Q_x[i]))/((I_x[i]*I_x[i])+(Q_x[i]*Q_x[i]));
+      Q_h[grid_row][grid_col]=((Q_in*I_x[i])-(I_in*Q_x[i]))/((I_x[i]*I_x[i])+(Q_x[i]*Q_x[i]));
+		i=i+1;
+	 end
+	 else
+	 begin
+	   I_h[grid_row][grid_col]=32'bx1;
+		Q_h[grid_row][grid_col]=32'bx1;
+	 end
+end
+ else 
+ begin
+ 	 I_h[grid_row][grid_col]=32'bx1;
+	 Q_h[grid_row][grid_col]=32'bx1;
+ end 
+end
+//always @(*) begin
+//  if (read)
+//  begin
+   assign I_out=I_h[re_row][re_col];
+	assign Q_out=Q_h[re_row][re_col];
+//  end
+//end
+endmodule
+
+
+*******************v4 before generate out data into text file to test it************************************
+
+module tst1 (iout,qout,rbnum);
+ parameter subcarrier=12;
+ parameter symbol=14;
+ output [32*subcarrier*symbol-1:0] iout,qout;
+ output [2:0] rbnum;
+  reg [31:0] iRB [subcarrier*symbol-1:0];
+  reg [31:0] qRB [subcarrier*symbol-1:0];
+  
+  integer j;
+  initial 
+begin 
+ $readmemb("rb.txt",iRB );
+ $readmemb("rb2.txt",qRB );
+  for (j=0;j<10;j=j+1)     
+ $display ("Memory [%0d]=%b",j,iRB[j]);
+end
+  genvar i;
+  generate for (i = 0; i < subcarrier*symbol; i = i+1) begin:instmem
+    assign iout[32*i +: 32] = iRB[i]; 
+	 assign qout[32*i +: 32] = qRB[i]; 
+  end endgenerate
+
+ 
+endmodule 
+/////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+module tst (I_in,Q_in,RB_num,I_out,Q_out);
+parameter subcarrier=12;
+parameter symbol=14;
+parameter no_ref=48; //number of ref sig in subframe
+parameter rf_rb=6;//number of ref sig in one resource block
+input [32*subcarrier*symbol-1:0] I_in,Q_in;  //I&Q data
+input [2:0] RB_num;
+output [32*subcarrier*symbol-1:0] I_out,Q_out;
+reg [31:0] I_x [0:no_ref-1];  // I data of ref signals
+reg [31:0] Q_x [0:no_ref-1];  //Q data of ref data
+reg [31:0] I_h [0:symbol-1][0:subcarrier-1];  //Inphase response of estimated channel (interpolation will be here)
+reg [31:0] Q_h [0:symbol-1][0:subcarrier-1];  //Quad response of estimated channel 
+reg [31:0] I_RB [0:symbol-1][0:subcarrier-1]; //resource block
+reg [31:0] Q_RB [0:symbol-1][0:subcarrier-1]; //resource block
+integer i,j,k,N;
+  initial 
+  begin 
+   $readmemb("xreal.txt", I_x);
+   $readmemb("ximg.txt", Q_x);
+  end
+
+  always @*
+  begin
+    for (j = 0; j < symbol; j = j+1)  //to rearrange inputs stream into grid 
+	 begin
+	  for (i = 0; i < subcarrier; i = i+1) //i for row while j for col
+	  begin
+	   N=((j*subcarrier)+i);
+      I_RB[j][i] = I_in[32*N +: 32];
+		Q_RB[j][i] = Q_in[32*N +: 32];
+	  end
+	 end
+	
+	//starting search for ref in grid and apply the apply the alghorithm
+	for (j = 0; j < symbol; j = j+1)
+	begin
+	  for (i = 0; i < subcarrier; i = i+1) //j for row while i for col
+	  begin
+		if (j==0 || j==7) //searching for ref sig by known postions
+		begin
+		  if (i==0 || i==6)  //@ symbol (1&8) it exists @ subcarriers (1&7) 
+		  begin //cmplx division
+			I_h[j][i]=((I_RB[i][j]* I_x[k+(RB_num*rf_rb)] )+(Q_RB[i][j]*Q_x[k+(RB_num*rf_rb)]))/((I_x[k+(RB_num*rf_rb)]*I_x[k+(RB_num*rf_rb)])+(Q_x[k+(RB_num*rf_rb)]*Q_x[k+(RB_num*rf_rb)]));
+			Q_h[j][i]=((Q_RB[i][j]*I_x[k+(RB_num*rf_rb)])-(I_RB[i][j]*Q_x[k+(RB_num*rf_rb)]))/((I_x[k+(RB_num*rf_rb)]*I_x[k+(RB_num*rf_rb)])+(Q_x[k+(RB_num*rf_rb)]*Q_x[k+(RB_num*rf_rb)]));
+			k=k+1;
+	     end	 
+	  	  else
+	     begin
+			I_h[j][i]=32'b0;
+			Q_h[j][i]=32'b0;
+		  end	  
+	  end
+	  	else if (j==4 || j==11) //searching for ref sig by known postions
+		begin
+		  if (i==3 || i==9)  //@ symbol (1&8) it exists @ subcarriers (1&7) 
+		  begin //cmplx division
+			I_h[j][i]=((I_RB[i][j]* I_x[k+(RB_num*rf_rb)] )+(Q_RB[i][j]*Q_x[k+(RB_num*rf_rb)]))/((I_x[k+(RB_num*rf_rb)]*I_x[k+(RB_num*rf_rb)])+(Q_x[k+(RB_num*rf_rb)]*Q_x[k+(RB_num*rf_rb)]));
+			Q_h[j][i]=((Q_RB[i][j]*I_x[k+(RB_num*rf_rb)])-(I_RB[i][j]*Q_x[k+(RB_num*rf_rb)]))/((I_x[k+(RB_num*rf_rb)]*I_x[k+(RB_num*rf_rb)])+(Q_x[k+(RB_num*rf_rb)]*Q_x[k+(RB_num*rf_rb)]));
+			k=k+1;
+	     end	 
+	  	  else
+	     begin
+			I_h[j][i]=32'b0;
+			Q_h[j][i]=32'b0;
+		  end	  
+	  end
+	 else
+	 begin
+	   I_h[j][i]=32'b0;
+		Q_h[j][i]=32'b0;
+	 end
+    end
+	end
+end 
+endmodule
+
+########################### Version 5 of code(trying to get true values) #########################################
+
+module tst1 (iout,qout,rbnum);
+ parameter subcarrier=12;
+ parameter symbol=14;
+ output [32*subcarrier*symbol-1:0] iout,qout;
+ output reg [2:0] rbnum;
+  reg [31:0] iRB [subcarrier*symbol-1:0];
+  reg [31:0] qRB [subcarrier*symbol-1:0];
+  
+  integer j;
+  initial 
+begin 
+ rbnum=0; //there's 6 resourse block in subframe
+ $readmemb("rb.txt",iRB );
+ $readmemb("rb2.txt",qRB );
+  for (j=0;j<10;j=j+1)     
+ $display ("Memory [%0d]=%b",j,iRB[j]);
+end
+  genvar i;
+  generate for (i = 0; i < subcarrier*symbol; i = i+1) begin:instmem
+    assign iout[32*i +: 32] = iRB[i]; 
+	 assign qout[32*i +: 32] = qRB[i]; 
+  end endgenerate
+
+ 
+endmodule 
+/////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+module tst (I_in,Q_in,RB_num,I_out,Q_out);
+parameter subcarrier=12;
+parameter symbol=14;
+parameter no_ref=48; //number of ref sig in subframe
+parameter rf_rb=6;//number of ref sig in one resource block
+input [32*subcarrier*symbol-1:0] I_in,Q_in;  //I&Q data
+input [2:0] RB_num;
+output [32*subcarrier*symbol-1:0] I_out,Q_out;
+reg [31:0] I_x [0:no_ref-1];  // I data of ref signals
+reg [31:0] Q_x [0:no_ref-1];  //Q data of ref data
+reg [63:0] I_h [0:symbol-1][0:subcarrier-1];  //Inphase response of estimated channel (interpolation will be here)
+reg [63:0] Q_h [0:symbol-1][0:subcarrier-1];  //Quad response of estimated channel 
+reg [31:0] I_RB [0:symbol-1][0:subcarrier-1]; //resource block
+reg [31:0] Q_RB [0:symbol-1][0:subcarrier-1]; //resource block
+integer i,j,k,N,y,n;
+real IX,IR,QX,QR;
+
+
+//task bin2sft;  //to convert binary into single floating
+//  input [31:0] bin;
+//  output [31:0] ft;
+//  real out;
+//  integer i,j;
+//  begin 
+//   for (i=0;i<32;i=i+1)
+//	 begin
+//	  j=i-23;
+//	  if (i==31)
+//	   begin
+//		 if (bin[i])
+//		   out=out*-1;
+//		 else
+//         out=out*1;		 
+//		end
+//	  else	
+//	   out=out+(bin[i]*(2**j));
+//	 end
+//    // out =out>>23;
+//     ft=out;	
+//  end	  
+//endtask
+
+
+  initial 
+  begin 
+   $readmemb("xreal.txt", I_x);
+   $readmemb("ximg.txt", Q_x);
+  end
+  tst1 inst_1 (.iout(I_in), .qout(Q_in), .rbnum(RB_num));
+  initial 
+    k=0;
+  always @*
+  begin
+    for (j = 0; j < symbol; j = j+1)  //to rearrange inputs stream into grid 
+	 begin
+	  for (i = 0; i < subcarrier; i = i+1) //j for row while i for col
+	  begin
+	   N=((j*subcarrier)+i);
+      I_RB[j][i] = I_in[32*N +: 32];
+		Q_RB[j][i] = Q_in[32*N +: 32];
+	  end
+	 end
+	
+	//starting search for ref in grid and apply the apply the alghorithm
+	for (j = 0; j < symbol; j = j+1)
+	begin
+	  for (i = 0; i < subcarrier; i = i+1) //j for row while i for col
+	  begin
+		if (j==0 || j==7) //searching for ref sig by known postions
+		begin
+		  if (i==0 || i==6)  //@ symbol (1&8) it exists @ subcarriers (1&7) 
+		  begin //cmplx division
+         y=k+(RB_num*rf_rb);
+			bin2sft(I_x[y],IX);
+			bin2sft(Q_x[y],QX);
+			bin2sft(I_RB[i][j],IR);
+			bin2sft(Q_RB[i][j],QR);
+			n=(IX*IX)+(QX*QX);
+//         IX=I_x[y][31:24];
+//			QX=Q_x[y][31:24];
+//			IR=I_RB[i][j][31:24];
+//			QR=Q_RB[i][j][31:24];
+//			n=(IX*IX)+(QX*QX);
+			I_h[j][i]=((IR* IX )+(QR*QX));
+			I_h[j][i]=I_h[j][i]/n;
+			Q_h[j][i]=((Q_RB[i][j]*I_x[y])-(I_RB[i][j]*Q_x[y]));
+			Q_h[j][i]=Q_h[j][i]/n;
+			k=k+1;
+	     end	 
+	  	  else
+	     begin
+			I_h[j][i]=32'b0;
+			Q_h[j][i]=32'b0;
+		  end	  
+	  end
+	  	else if (j==4 || j==11) //searching for ref sig by known postions
+		begin
+		  if (i==3 || i==9)  //@ symbol (1&8) it exists @ subcarriers (1&7) 
+		  begin //cmplx division
+         y=k+(RB_num*rf_rb);
+			n=(I_x[y]*I_x[y])+(Q_x[y]*Q_x[y]);
+			I_h[j][i]=((I_RB[i][j]* I_x[y] )+(Q_RB[i][j]*Q_x[y]));
+			I_h[j][i]=I_h[j][i]/n;
+			Q_h[j][i]=((Q_RB[i][j]*I_x[y])-(I_RB[i][j]*Q_x[y]));
+			Q_h[j][i]=Q_h[j][i]/n;
+			k=k+1;
+	     end	 
+	  	  else
+	     begin
+			I_h[j][i]=32'b0;
+			Q_h[j][i]=32'b0;
+		  end	  
+	  end
+	 else
+	 begin
+	   I_h[j][i]=32'b0;
+		Q_h[j][i]=32'b0;
+	 end
+    end
+	end
+end 
+endmodule
+
+
+##################################### v6 doesn't work  ###################################################
+
+
+module tst1 (iout,qout,rbnum);
+ parameter subcarrier=12;
+ parameter symbol=14;
+ output [32*subcarrier*symbol-1:0] iout,qout;
+ output reg [2:0] rbnum;
+  reg [31:0] iRB [subcarrier*symbol-1:0];
+  reg [31:0] qRB [subcarrier*symbol-1:0];
+  
+  integer j;
+  initial 
+begin 
+ rbnum=0; //there's 6 resourse block in subframe
+ $readmemb("rb.txt",iRB );
+ $readmemb("rb2.txt",qRB );
+  for (j=0;j<10;j=j+1)     
+ $display ("Memory [%0d]=%b",j,iRB[j]);
+end
+  genvar i;
+  generate for (i = 0; i < subcarrier*symbol; i = i+1) begin:instmem
+    assign iout[32*i +: 32] = iRB[i]; 
+	 assign qout[32*i +: 32] = qRB[i]; 
+  end endgenerate
+
+ 
+endmodule 
+/////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+module tst (I_in,Q_in,RB_num,I_out,Q_out);
+parameter subcarrier=12;
+parameter symbol=14;
+parameter no_ref=48; //number of ref sig in subframe
+parameter rf_rb=6;//number of ref sig in one resource block
+input [32*subcarrier*symbol-1:0] I_in,Q_in;  //I&Q data
+input [2:0] RB_num;
+output [32*subcarrier*symbol-1:0] I_out,Q_out;
+reg [31:0] I_x [0:no_ref-1];  // I data of ref signals
+reg [31:0] Q_x [0:no_ref-1];  //Q data of ref data
+reg [31:0] I_h [0:symbol-1][0:subcarrier-1];  //Inphase response of estimated channel (interpolation will be here)
+reg [31:0] Q_h [0:symbol-1][0:subcarrier-1];  //Quad response of estimated channel 
+reg [31:0] I_RB [0:symbol-1][0:subcarrier-1]; //resource block
+reg [31:0] Q_RB [0:symbol-1][0:subcarrier-1]; //resource block
+integer i,j,k,N,y,n;
+reg [31:0] temp, temp2,temp3;
+
+//***********************************************************************
+task Qmult;  //to convert 32 single point into fixed point
+  input [31:0] a,b;
+  output [31:0] out; //extra bit for sign
+  reg [63:0] temp;
+ // reg sign;
+  begin
+      temp=0;
+		//sign=a[31] ^ b[31]; //don't work
+		if (a[31] ^ b[31]) //=xor
+		 begin
+		  a={1'b0,a[30:0]};
+		  b={1'b0,b[30:0]};
+		  temp=a*b;
+		  out={1'b1,temp[46:16]};
+		 end
+		else
+		 begin
+		  if ((b[31] & a[31]) )
+		  begin
+		   a={1'b0,a[30:0]};
+		   b={1'b0,b[30:0]};
+		   temp=a*b;
+		   out=temp[47:16];
+		 end
+		  else 
+		  begin
+		  //a={1'b0,a[30:0]};
+		  //b={1'b0,a[30:0]};
+		  temp=a*b;
+		  out=temp[47:16]; //well last bit seem more accurate idk why
+		 end
+		end
+		//out={temp[63],temp[46:16]}; //48 was fault T_T
+  end	  
+endtask
+//******************************************************************************
+task Qadd;  //to convert 32 single point into fixed point
+  input [31:0] a,b;
+  output [31:0] out; 
+  begin
+		if (a[31]==1 || b[31]==1) //=xor
+		 begin
+		  out=a+b;
+		  out={1'b1,out[30:0]};
+		 end
+		else
+		 begin
+		  out=a+b;
+		 end
+  end	  
+endtask
+
+//******************************************************************************
+  initial 
+  begin 
+   $readmemb("xreal.txt", I_x);
+   $readmemb("ximg.txt", Q_x);
+	#2 $display ("Est=%x",I_h[0][0]);
+	#2 $display ("temp=%x",temp);
+	#2 $display ("temp2=%x",temp2);	
+  end
+  tst1 inst_1 (.iout(I_in), .qout(Q_in), .rbnum(RB_num));
+  initial 
+    k=0;
+  always @*
+  begin
+    for (j = 0; j < symbol; j = j+1)  //to rearrange inputs stream into grid 
+	 begin
+	  for (i = 0; i < subcarrier; i = i+1) //j for row while i for col
+	  begin
+	   N=((j*subcarrier)+i);
+      I_RB[j][i] = I_in[32*N +: 32];
+		Q_RB[j][i] = Q_in[32*N +: 32];
+	  end
+	 end
+	
+	//starting search for ref in grid and apply the apply the alghorithm
+	for (j = 0; j < symbol; j = j+1)
+	begin
+	  for (i = 0; i < subcarrier; i = i+1) //j for row while i for col
+	  begin
+		if (j==0 || j==7) //searching for ref sig by known postions
+		begin
+		  if (i==0 || i==6)  //@ symbol (1&8) it exists @ subcarriers (1&7) 
+		  begin //cmplx division
+         y=k+(RB_num*rf_rb);
+//			n=(IX*IX)+(QX*QX);
+//I_h[j][i]=((IR* IX )+(QR*QX)):
+			Qmult(I_x[y],I_RB[i][j],I_h[j][i]);
+			Qmult(Q_x[0],Q_RB[i][j],temp); 
+		//	Qadd (I_h[j][i],temp,I_h[j][i]);  //the Numerator is done	
+//			(IX*IX)+(QX*QX);  the denominator
+			Qmult(I_x[0],I_x[0],temp2);
+			//Qmult(Q_x[1],Q_x[1],temp);
+			//temp2=temp2+temp;
+			//Qadd (temp2,temp,temp3);  
+		   //temp3=I_x[y]*I_RB[i][j];
+			
+			
+			//Q_h[j][i]=((Q_RB[i][j]*I_x[y])-(I_RB[i][j]*Q_x[y]));
+			//Q_h[j][i]=Q_h[j][i]/n;
+			k=k+1;
+	     end	 
+	  	  else
+	     begin
+			I_h[j][i]=32'b0;
+			Q_h[j][i]=32'b0;
+		  end	  
+	  end
+	  	else if (j==4 || j==11) //searching for ref sig by known postions
+		begin
+		  if (i==3 || i==9)  //@ symbol (1&8) it exists @ subcarriers (1&7) 
+		  begin //cmplx division
+         y=k+(RB_num*rf_rb);
+			n=(I_x[y]*I_x[y])+(Q_x[y]*Q_x[y]);
+			I_h[j][i]=((I_RB[i][j]* I_x[y] )+(Q_RB[i][j]*Q_x[y]));
+			I_h[j][i]=I_h[j][i]/n;
+			Q_h[j][i]=((Q_RB[i][j]*I_x[y])-(I_RB[i][j]*Q_x[y]));
+			Q_h[j][i]=Q_h[j][i]/n;
+			k=k+1;
+	     end	 
+	  	  else
+	     begin
+			I_h[j][i]=32'b0;
+			Q_h[j][i]=32'b0;
+		  end	  
+	  end
+	 else
+	 begin
+	   I_h[j][i]=32'b0;
+		Q_h[j][i]=32'b0;
+	 end
+    end
+	end
+end 
+endmodule
+
+##################################### v7 failure T_T  #######################################################
+
+
+module tst1 (iout,qout,rbnum);
+ parameter subcarrier=12;
+ parameter symbol=14;
+ output [32*subcarrier*symbol-1:0] iout,qout;
+ output reg [2:0] rbnum;
+  reg [31:0] iRB [subcarrier*symbol-1:0];
+  reg [31:0] qRB [subcarrier*symbol-1:0];
+  
+  integer j;
+  initial 
+  begin 
+ rbnum=0; //there's 6 resourse block in subframe
+ $readmemb("rb.txt",iRB );
+ $readmemb("rb2.txt",qRB );
+  for (j=0;j<10;j=j+1)     
+ $display ("Memory [%0d]=%b",j,iRB[j]);
+ end
+  genvar i;
+  generate for (i = 0; i < subcarrier*symbol; i = i+1) begin:instmem
+    assign iout[32*i +: 32] = iRB[i]; 
+	 assign qout[32*i +: 32] = qRB[i]; 
+  end endgenerate
+
+ 
+endmodule 
+/////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+module tst (I_in,Q_in,RB_num,I_out,Q_out);
+parameter subcarrier=12;
+parameter symbol=14;
+parameter no_ref=48; //number of ref sig in subframe
+parameter rf_rb=6;//number of ref sig in one resource block
+input [32*subcarrier*symbol-1:0] I_in,Q_in;  //I&Q data
+input [2:0] RB_num;
+output [32*subcarrier*symbol-1:0] I_out,Q_out;
+reg [31:0] I_x [0:no_ref-1];  // I data of ref signals
+reg [31:0] Q_x [0:no_ref-1];  //Q data of ref data
+reg [31:0] I_h [0:symbol-1][0:subcarrier-1];  //Inphase response of estimated channel (interpolation will be here)
+reg [31:0] Q_h [0:symbol-1][0:subcarrier-1];  //Quad response of estimated channel 
+reg [31:0] I_RB [0:symbol-1][0:subcarrier-1]; //resource block
+reg [31:0] Q_RB [0:symbol-1][0:subcarrier-1]; //resource block
+integer i,j,k,N,y,n;
+reg [31:0] temp, temp2,temp3;
+
+//***********************************************************************
+task Qmult;  //to multiple 32 single point as Q31 fixed point
+  input [31:0] a,b;
+  output [31:0] out; //extra bit for sign
+  reg [63:0] temp;
+  reg a31,b31;
+  begin
+      temp=0;
+		a31=a[31];
+		b31=b[31];
+		//sign=a[31] ^ b[31]; //don't work
+//		if (a31==1 && b31==0) //=xor
+//		 begin
+//		   a={1'b0,a[30:0]};
+//		   //b={1'b1,b[30:0]};		 
+//		   temp=a*b;
+//			out=temp[47:16];
+//		   //out={1'b1,temp[46:16]};
+//		 end
+//		else if (a[31]==0 && b[31]==1) //=xor
+//		 begin
+//		   //a={1'b0,a[30:0]};
+//		   b={1'b0,b[30:0]};		 
+//		   temp=a*b;
+//		   out={1'b1,temp[46:16]};
+//		 end	
+		//else
+//		if (a31==1 && b31==1) //=xor
+//		 begin
+//		   a={1'b0,a[30:0]};
+//		   b={1'b0,b[30:0]};		 
+//		   temp=a*b;
+//		   out=temp[47:16];
+//		 end			
+//////////////////////////////////////////////////////////		 
+	//	else 
+		// begin
+    	  // a={1'b0,a[30:0]};
+       //  b={1'b0,b[30:0]};
+//		   a=a<<8;
+//			b=b<<8;
+    	   temp=a*b;
+//			temp=(temp>>31) + ((temp >> 30) & 1);
+         temp=temp>>46;
+			out=temp;
+		   //out={temp[62],temp[53:24]};
+			
+	//	 end
+		  
+		//out={temp[63],temp[46:16]}; //48 was fault T_T
+  end	  
+endtask
+//******************************************************************************
+task Qadd;  
+  input [31:0] a,b;
+  output [31:0] out; 
+  begin
+		if (a[31]==1 || b[31]==1) //=xor
+		 begin
+		  out=a+b;
+		  out={1'b1,out[30:0]};
+		 end
+		else
+		 begin
+		  out=a+b;
+		 end
+  end	  
+endtask
+
+//******************************************************************************
+  initial 
+  begin 
+   $readmemb("xreal.txt", I_x);
+   $readmemb("ximg.txt", Q_x);
+	#2 $display ("Est=%x",I_h[0][0]);
+	#2 $display ("temp=%x",temp);
+	#2 $display ("temp2=%x",temp2);
+  end
+  tst1 inst_1 (.iout(I_in), .qout(Q_in), .rbnum(RB_num));
+  initial 
+    k=0;
+  always @*
+  begin
+    for (j = 0; j < symbol; j = j+1)  //to rearrange inputs stream into grid 
+	 begin
+	  for (i = 0; i < subcarrier; i = i+1) //j for row while i for col
+	  begin
+	   N=((j*subcarrier)+i);
+      I_RB[j][i] = I_in[32*N +: 32];
+		Q_RB[j][i] = Q_in[32*N +: 32];
+	  end
+	 end
+	
+	//starting search for ref in grid and apply the apply the alghorithm
+	for (j = 0; j < symbol; j = j+1)
+	begin
+	  for (i = 0; i < subcarrier; i = i+1) //j for row while i for col
+	  begin
+		if (j==0 || j==7) //searching for ref sig by known postions
+		begin
+		  if (i==0 || i==6)  //@ symbol (1&8) it exists @ subcarriers (1&7) 
+		  begin //cmplx division
+         y=k+(RB_num*rf_rb);
+//			n=(IX*IX)+(QX*QX);
+//                             ((IR* IX )+(QR*QX)):
+			Qmult(Q_RB[i][j],I_RB[i][j],I_h[j][i]);
+			Qmult(Q_RB[i][j],Q_RB[i][j],temp); 
+		//	Qadd (I_h[j][i],temp,I_h[j][i]);  //the Numerator is done	
+//			(IX*IX)+(QX*QX);  the denominator
+			Qmult(I_x[0],I_x[0],temp2);
+			//Qmult(Q_x[1],Q_x[1],temp);
+			//temp2=temp2+temp;
+			//Qadd (temp2,temp,temp3);  
+		   //temp3=I_x[y]*I_RB[i][j];
+			
+			
+			//Q_h[j][i]=((Q_RB[i][j]*I_x[y])-(I_RB[i][j]*Q_x[y]));
+			//Q_h[j][i]=Q_h[j][i]/n;
+			k=k+1;
+	     end	 
+	  	  else
+	     begin
+			I_h[j][i]=32'b0;
+			Q_h[j][i]=32'b0;
+		  end	  
+	  end
+	  	else if (j==4 || j==11) //searching for ref sig by known postions
+		begin
+		  if (i==3 || i==9)  //@ symbol (1&8) it exists @ subcarriers (1&7) 
+		  begin //cmplx division
+         y=k+(RB_num*rf_rb);
+			n=(I_x[y]*I_x[y])+(Q_x[y]*Q_x[y]);
+			I_h[j][i]=((I_RB[i][j]* I_x[y] )+(Q_RB[i][j]*Q_x[y]));
+			I_h[j][i]=I_h[j][i]/n;
+			Q_h[j][i]=((Q_RB[i][j]*I_x[y])-(I_RB[i][j]*Q_x[y]));
+			Q_h[j][i]=Q_h[j][i]/n;
+			k=k+1;
+	     end	 
+	  	  else
+	     begin
+			I_h[j][i]=32'b0;
+			Q_h[j][i]=32'b0;
+		  end	  
+	  end
+	 else
+	 begin
+	   I_h[j][i]=32'b0;
+		Q_h[j][i]=32'b0;
+	 end
+    end
+	end
+end 
+endmodule
+
+*********************************************** ver 8 another failure (will change to 16) ********************************
+
+module tst1 (iout,qout,rbnum);
+ parameter subcarrier=12;
+ parameter symbol=14;
+ parameter word=16;  //# bits per word
+ output [word*subcarrier*symbol-1:0] iout,qout;
+ output reg [2:0] rbnum;
+  reg [word-1:0] iRB [subcarrier*symbol-1:0];
+  reg [word-1:0] qRB [subcarrier*symbol-1:0];
+  
+  integer j;
+  initial 
+begin 
+ rbnum=0; //there's 6 resourse block in subframe
+ $readmemb("I_grid.txt",iRB );
+ $readmemb("Q_grid.txt",qRB );
+  for (j=0;j<10;j=j+1)     
+ $display ("Memory [%0d]=%b",j,iRB[j]);
+end
+  genvar i;
+  generate for (i = 0; i < subcarrier*symbol; i = i+1) begin:instmem
+    assign iout[word*i +: word] = iRB[i]; 
+	 assign qout[word*i +: word] = qRB[i]; 
+  end endgenerate
+
+ 
+endmodule 
+/////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+module tst (I_in,Q_in,RB_num,I_out,Q_out);
+parameter subcarrier=12;
+parameter symbol=14;
+parameter word=16;  //# bits per word
+parameter no_ref=48; //number of ref sig in subframe
+parameter rf_rb=6;//number of ref sig in one resource block
+input [16*subcarrier*symbol-1:0] I_in,Q_in;  //I&Q data
+input [2:0] RB_num;
+output [16*subcarrier*symbol-1:0] I_out,Q_out;
+reg [word-1:0] I_x [0:no_ref-1];  // I data of ref signals
+reg [word-1:0] Q_x [0:no_ref-1];  //Q data of ref data
+reg [word-1:0] I_h [0:symbol-1][0:subcarrier-1];  //Inphase response of estimated channel (interpolation will be here)
+reg [word-1:0] Q_h [0:symbol-1][0:subcarrier-1];  //Quad response of estimated channel 
+reg [word-1:0] I_RB [0:symbol-1][0:subcarrier-1]; //resource block
+reg [word-1:0] Q_RB [0:symbol-1][0:subcarrier-1]; //resource block
+integer i,j,k,N,y,n;
+reg [word-1:0] temp, temp2,temp3;
+
+//***********************************************************************
+task Qmult;  //to convert 32 single point into fixed point
+  input [word-1:0] a,b;
+  output [word-1:0] out; //extra bit for sign
+  reg [(2*word)-1:0] temp;
+ // reg sign;
+  begin
+      temp=0;
+		//sign=a[31] ^ b[31]; //don't work
+		
+		//end
+		//out={temp[63],temp[46:16]}; //48 was fault T_T
+  end	  
+endtask
+//******************************************************************************
+//task f2q;  //to convert 32 single point into fixed point
+//  input [word-1:0] a;
+//  output [word-1:0] out;
+//  //reg [41:0] ext;
+//  reg [(2*word)-1:0] round;
+//  parameter IWID=32;
+//  parameter OWID=10;
+//  begin
+//    out=a*1000;
+//	 //round=a + 32'b00111111000000000000000000000000;
+//	 //round = a[3] ? a[31:4] + 1'b1 : a[31:4];
+//	 //out=round[(IWID-1):(IWID-OWID)];
+//  end	  
+//endtask
+
+//******************************************************************************
+  initial 
+  begin 
+   $readmemb("I_ref.txt", I_x);
+   $readmemb("Q_ref.txt", Q_x);
+	#2 $display ("Est=%x",I_h[0][0]);
+	#2 $display ("temp=%x",temp);
+	#2 $display ("temp2=%x",temp2);	
+  end
+  tst1 inst_1 (.iout(I_in), .qout(Q_in), .rbnum(RB_num));
+  initial 
+    k=0;
+  always @*
+  begin
+    for (j = 0; j < symbol; j = j+1)  //to rearrange inputs stream into grid 
+	 begin
+	  for (i = 0; i < subcarrier; i = i+1) //j for row while i for col
+	  begin
+	   N=((j*subcarrier)+i);
+      I_RB[j][i] = I_in[word*N +: word];
+		Q_RB[j][i] = Q_in[word*N +: word];
+	  end
+	 end
+	
+	//starting search for ref in grid and apply the apply the alghorithm
+	for (j = 0; j < symbol; j = j+1)
+	begin
+	  for (i = 0; i < subcarrier; i = i+1) //j for row while i for col
+	  begin
+		if (j==0 || j==7) //searching for ref sig by known postions
+		begin
+		  if (i==0 || i==6)  //@ symbol (1&8) it exists @ subcarriers (1&7) 
+		  begin //cmplx division
+         y=k+(RB_num*rf_rb);
+//			n=(IX*IX)+(QX*QX);
+//I_h[j][i]=((IR* IX )+(QR*QX)):
+			//Qmult(I_x[y],I_RB[i][j],I_h[j][i]);
+			//Qmult(Q_x[0],Q_RB[i][j],temp); 
+		//	Qadd (I_h[j][i],temp,I_h[j][i]);  //the Numerator is done	
+//			(IX*IX)+(QX*QX);  the denominator
+			//Qmult(I_x[0],I_x[0],temp2);
+			//Qmult(Q_x[1],Q_x[1],temp);
+			//temp2=temp2+temp;
+			//Qadd (temp2,temp,temp3);  
+		   //temp3=I_x[y]*I_RB[i][j];
+			//f2q(I_x[1],temp);
+			
+			
+			//Q_h[j][i]=((Q_RB[i][j]*I_x[y])-(I_RB[i][j]*Q_x[y]));
+			//Q_h[j][i]=Q_h[j][i]/n;
+			k=k+1;
+	     end	 
+	  	  else
+	     begin
+			I_h[j][i]=0;
+			Q_h[j][i]=0;
+		  end	  
+	  end
+	  	else if (j==4 || j==11) //searching for ref sig by known postions
+		begin
+		  if (i==3 || i==9)  //@ symbol (1&8) it exists @ subcarriers (1&7) 
+		  begin //cmplx division
+         y=k+(RB_num*rf_rb);
+			n=(I_x[y]*I_x[y])+(Q_x[y]*Q_x[y]);
+			I_h[j][i]=((I_RB[i][j]* I_x[y] )+(Q_RB[i][j]*Q_x[y]));
+			I_h[j][i]=I_h[j][i]/n;
+			Q_h[j][i]=((Q_RB[i][j]*I_x[y])-(I_RB[i][j]*Q_x[y]));
+			Q_h[j][i]=Q_h[j][i]/n;
+			k=k+1;
+	     end	 
+	  	  else
+	     begin
+			I_h[j][i]=0;
+			Q_h[j][i]=0;
+		  end	  
+	  end
+	 else
+	 begin
+	   I_h[j][i]=0;
+		Q_h[j][i]=0;
+	 end
+    end
+	end
+end 
+endmodule
+*********************************************************** opearations are done :) now it's algorithm********************
+
+for (j = 0; j < symbol; j = j+1)
+	begin
+	  for (i = 0; i < subcarrier; i = i+1) //i for row while j for col
+	  begin
+		if (j==0 || j==7) //searching for ref sig by known postions
+		begin
+		  if (i==0 || i==6)  //@ symbol (1&8) it exists @ subcarriers (1&7) 
+		  begin //cmplx division
+         y=k+(RB_num*rf_rb);
+			Qmult(I_RB[i][j],I_x[y],I_h[i][j]);
+			temp=I_RB[i][j];
+			temp2=I_RB[j][i];
+
+			k=k+1;
+	     end	 
+	  	  else
+	     begin
+			I_h[j][i]=0;
+			Q_h[j][i]=0;
+		  end	  
+	  end
+	  	else if (j==4 || j==11) //searching for ref sig by known postions
+		begin
+		  if (i==3 || i==9)  //@ symbol (1&8) it exists @ subcarriers (1&7) 
+		  begin //cmplx division
+         y=k+(RB_num*rf_rb);
+			n=(I_x[y]*I_x[y])+(Q_x[y]*Q_x[y]);
+			I_h[j][i]=((I_RB[i][j]* I_x[y] )+(Q_RB[i][j]*Q_x[y]));
+			I_h[j][i]=I_h[j][i]/n;
+			Q_h[j][i]=((Q_RB[i][j]*I_x[y])-(I_RB[i][j]*Q_x[y]));
+			Q_h[j][i]=Q_h[j][i]/n;
+			k=k+1;
+	     end	 
+	  	  else
+	     begin
+			I_h[j][i]=0;
+			Q_h[j][i]=0;
+		  end	  
+	  end
+	 else
+	 begin
+	   I_h[j][i]=0;
+		Q_h[j][i]=0;
+	 end
+    end
+	end
+***************************** after make avg and before decrease the area of used registers*************************
+
+module tst1 (iout,qout,rbnum);
+ parameter subcarrier=12;
+ parameter symbol=14;
+ parameter word=16;  //# bits per word
+ output [word*subcarrier*symbol-1:0] iout,qout;
+ output reg [2:0] rbnum;
+  reg [word-1:0] iRB [subcarrier*symbol-1:0];
+  reg [word-1:0] qRB [subcarrier*symbol-1:0];
+  
+  integer j;
+  initial 
+begin 
+ rbnum=0; //there's 6 resourse block in subframe
+ $readmemb("I_grid.txt",iRB );
+ $readmemb("Q_grid.txt",qRB );
+  for (j=0;j<10;j=j+1)     
+ $display ("Memory [%0d]=%b",j,iRB[j]);
+end
+  genvar i;  //flatting the grid
+  generate for (i = 0; i < subcarrier*symbol; i = i+1) begin:instmem
+    assign iout[word*i +: word] = iRB[i]; 
+	 assign qout[word*i +: word] = qRB[i]; 
+  end endgenerate
+
+ 
+endmodule 
+/////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+module tst (I_in,Q_in,RB_num,I_out,Q_out);
+parameter subcarrier=12;
+parameter symbol=14;
+parameter slotsym=7; //number of ofdm symbols per slot (for normal but if extended =6)
+parameter ID=5;  //let cell id =24 (0-->510) 
+parameter word=16;  //# bits per word
+parameter fraction=14; //# of bits for for fraction part
+parameter exponent=word-fraction-1;
+//parameter sign=16'b0001<<exponent; // the base postion of sign bit 
+parameter int_upper=(2*fraction)+exponent; //upper limit of # int bits
+//parameter int_lower=(2*fraction);  ////lower limit of # int bits
+parameter subpos=5; // which subcarrier contains a first ref signal depnding on modulo 6 cell id
+parameter sympos=0; // which ofdm symbol contains a first ref signal depending on frame type(normal or extended)
+parameter no_ref=8; //number of ref sig in subframe
+parameter rf_rb=8;//number of ref sig in one resource block
+input [word*subcarrier*symbol-1:0] I_in,Q_in;  //I&Q data
+input [2:0] RB_num;
+output [word*subcarrier*symbol-1:0] I_out,Q_out;
+reg signed [word-1:0] I_x [0:no_ref-1];  // I data of ref signals
+reg signed [word-1:0] Q_x [0:no_ref-1];  //Q data of ref data
+reg signed [word-1:0] I_h [0:subcarrier-1][0:symbol-1];  //Inphase response of estimated channel (interpolation will be here)
+reg signed [word-1:0] Q_h [0:subcarrier-1][0:symbol-1];  //Quad response of estimated channel 
+reg signed [word-1:0] I_RB[0:subcarrier-1][0:symbol-1]; //resource block
+reg signed [word-1:0] Q_RB[0:subcarrier-1][0:symbol-1]; //resource block
+reg signed [word-1:0] Avg_I [0:subcarrier-1]; // the coloumn vector that will avg estimated values on it then interpolate
+reg signed [word-1:0] Avg_Q [0:subcarrier-1];// inside it to replicated and used as the channel estimate for the entire resource grid.
+integer i,j,k,N,n;
+reg [2:0] y;
+reg signed [word-1:0] temp,temp2,temp3,temp4,temp5;
+//reg signed [(2*word)-1:0] temp5;
+
+//***********************************************************************
+task Qmult;  //to convert 32 single point into fixed point
+  input [word-1:0] a,b;
+  output [word-1:0] out; //extra bit for sign
+  reg [(2*word)-1:0] temp;
+  begin
+     // N=(2*fraction)+exponent; //upper limit of # int bits
+		//n=(2*fraction)+1;        //down limit of # int limits
+		if ((a[15]==1) && (b[15]==0)) //first i/p is -ve &2nd is +ve
+		begin
+		  a=(~a)+1;  //2's comp to make it +ve
+		  temp=a*b; //now (+ve * +ve)
+		  //temp=temp+sign;
+		  temp=(~temp)+1;//convert it to negative as supposed to be
+		  out=temp[int_upper:fraction];
+		  //out={(~temp[int_upper:int_lower]),temp[(2*fraction)-1:fraction]};  //if -ve we should invert all int bits
+		  //out={(!temp[29]),temp[28:14]}; //case of Q14
+		  //out=temp[30:15]^16'h8000; ------> another method to change last bit
+		end
+		else if ((b[15]==1) && (a[15]==0)) //first i/p is +ve &2nd is -ve
+      begin
+		  b=(~b)+1;  //2's comp to make it +ve
+		  temp=a*b;
+		  //temp=temp+sign;
+		  temp=(~temp)+1;//convert it to negative as supposed to be
+		  out=temp[int_upper:fraction];		  
+		  //out={(~temp[int_upper:int_lower]),temp[2*fraction:fraction]};
+		  //out={(!temp[30]),temp[29:15]}; case Q15
+		end
+		else if ((b[15]==1) && (a[15]==1)) //both inputs are -ve
+		begin
+        a=(~a)+1;
+		  b=(~b)+1;
+		  temp=a*b;
+		  out=temp[int_upper:fraction];
+		  //out=temp[30:15]; //no need to change last bit as -*-=+
+		end
+     	else
+		begin
+		  temp=a*b; //according to # int & fractions we keep only the int before and after the point
+		  out=temp[int_upper:fraction];
+		  //out=temp[30:15]; //&truncate the extra bits
+		end
+  end	  
+endtask
+//*****************************************************************
+
+//*****************************************************************
+  initial 
+  begin	
+   //temp2={(~temp2[3:2]),temp2[1:0]};  3=word 2=#fractions -1  1=fractions
+	y=3'b000;
+   $readmemb("I_ref.txt", I_x);
+   $readmemb("Q_ref.txt", Q_x);
+	#2 $display ("Est=%x",I_h[11][7]);
+	#2 $display ("QEst=%x",Q_h[11][7]);
+	#2 $display ("temp=%x",temp);
+   #2 $display ("temp=%b",temp);
+	#2$display ("temp2=%b",temp2);
+	#2 $display ("temp2=%x",temp2);
+   #2 $display ("temp3=%b",temp3);	
+	#2 $display ("temp4=%b",temp4);
+  end
+  tst1 inst_1 (.iout(I_in), .qout(Q_in), .rbnum(RB_num));
+  initial 
+    k=0;
+  always @*
+  begin  
+  //unflatting the grid again
+    for (j = 0; j < subcarrier ; j = j+1)  //to rearrange inputs stream into grid 
+	  for (i = 0; i < symbol ; i = i+1) //j for row while i for col
+	  begin
+	   N=((j*symbol)+i);
+      I_RB[j][i] = I_in[word*N +: word];
+		Q_RB[j][i] = Q_in[word*N +: word];
+	  end
+	 
+	
+	//starting search for ref in grid and apply the apply the alghorithm
+	for (j = 0; j < symbol; j = j+1)
+	    for (i = 0; i < subcarrier; i = i+1) //i for row while j for col
+		 begin 		     
+			  if ( ((j==sympos)||(j==sympos+slotsym)) && ((i==subpos)||(i==subpos+6))) begin//0,7,5,11
+			   N=((i*symbol)+j);
+			   temp3 = I_in[word*N +: word];  //=I_RB etxract ref from input stream
+			   temp4 = Q_in[word*N +: word];  //=Q_RB			   
+			   Qmult(temp3,I_x[y],temp);
+				Qmult(temp4,Q_x[y],I_h[i][j]);
+				I_h[i][j]=I_h[i][j]+temp;  //I estimated
+//*******************************************************************************
+			   Qmult(temp4,I_x[y],temp2);
+				Qmult(temp3,Q_x[y],Q_h[i][j]);
+				Q_h[i][j]=temp2-Q_h[i][j];	
+				if (Q_h[i][j]!=16'h0000)
+             y=y+3'b001;
+				else
+				 y=y;
+			  end
+			  else if ( (j==sympos+(slotsym-3)||j==sympos+(symbol-3)) && (i==subpos-3||i==subpos+3)) begin //4,11,2,8 
+			   N=((i*symbol)+j);
+			   temp3 = I_in[word*N +: word];  //=I_RB
+			   temp4 = Q_in[word*N +: word];  //=Q_RB				  
+			   Qmult(temp3,I_x[y],temp);
+				Qmult(temp4,Q_x[y],I_h[i][j]);
+				I_h[i][j]=I_h[i][j]+temp;  //I estimated
+				/////////////////////////////////////////////////////////
+			   Qmult(temp4,I_x[y],temp2);
+				Qmult(temp3,Q_x[y],Q_h[i][j]);
+				Q_h[i][j]=temp2-Q_h[i][j];
+				if (Q_h[i][j]!=16'h0000)
+             y=y+3'b001;
+				else
+				 y=y;				
+			  end
+			  else begin
+			   I_h[i][j]=16'b0;
+			   Q_h[i][j]=16'b0;
+			  end
+		 end
+		 //**********averge step:use freq avg type###############3
+		for (i = 0; i < subcarrier; i = i+1) begin
+		   temp3=0;
+			temp4=0;
+			temp5=16'h0001<<fraction-1;// as we avg each 2 values so divided by 2--->(x0.5)
+		   for (j = 0; j < symbol; j = j+1) begin
+			  if (I_h[i][j]!=0) begin
+			   temp3=temp3+I_h[i][j]; //make sure intial value of temps are 0
+				temp4=temp4+Q_h[i][j];
+           end 
+			end
+			Qmult(temp3,temp5,Avg_I[i]);
+			Qmult(temp4,temp5,Avg_Q[i]);
+      end
+     //*********interpolation the time avg coloumn ##############		
+end 
+endmodule
+
+// no need to it as we always has a divisor =1 as ref (1/root2)^2 *2
+//task Qdiv;  //to convert 32 single point into fixed point
+//  input signed [word-1:0] a,b; //a is Dividend & b is divisor
+//  output [word-1:0] out; 
+//  parameter f_bits=14; //current # bits for fraction (word-int bits)
+//  parameter req_bits=9; //# required bits to dec frac bits to [max bits for frac(word-1)-5] 
+//  reg [(2*word)-1:0] temp;
+//  begin
+//	 if (a==b)
+//	   out =16'h0001;  //check if equals =1 in Q14 format
+//	 else if (a==(-1*b))
+//	    out=16'hc000;  // a=-b equals=-1 in Q14 format
+//	else
+//	 begin
+//	  a=a>>>9; //to decrese the range of fraction from 14 to 5 
+//	  a=a<<10; //no need to <<< (multiplied by 2^10)
+//	  temp= a[(word-1):0]+{11'b0,1'b1,4'b0};
+//	  a=temp[15:5];
+//	  if (b[15])
+//	   begin 
+//	    b=(~b)+1;
+//		 b=b>>>9; //as i want to to  mult by 1000 later--> 10 bits(2^10=1024)
+//	   end
+//	  else
+//	    b=b>>>9;
+//	 // a need to rounding;
+//	 //temp[word-1:word-req_bits+1]
+//	 out=a/b;
+//	 out=out<<<9; //back it tp Q14 format again
+//	end
+//  end	  
+// endtask
+
+*************************************don't remember what was that,anyway keep it here**********************
+
+		 //**********averge step:use freq avg type###############3 no_ref
+//		for (i = 0; i < no_Avg; i = i+1) begin  // 4 as no_ref are 8 after avg each 2 of them =4 values
+//         if (subpos>=3) //check if that got from modulo 6 cell id is the first sub contains rf or not
+//           first_pos=subpos-3;
+//         else
+//           first_pos=subpos;			
+//         temp3=0;
+//		   temp4=0;	
+//         temp5=16'h0001<<fraction-1;// as we avg each 2 values so divided by 2--->(x0.5)
+//         temp3=I_h[i]+I_h[i+no_Avg];
+//			temp4=Q_h[i]+Q_h[i+no_Avg];
+//			Qmult(temp3,temp5,Avg_I[first_pos+(3*i)]); //to put the avg at its specified subcarrier
+//			Qmult(temp4,temp5,Avg_Q[first_pos+(3*i)]);
+//		end
+//		for (i = 0; i < subcarrier; i = i+1) begin
+//		   temp3=0;
+//			temp4=0;
+//			temp5=16'h0001<<fraction-1;// as we avg each 2 values so divided by 2--->(x0.5)
+//		   for (j = 0; j < symbol; j = j+1) begin
+//			  if (I_h[i][j]!=0) begin
+//			   temp3=temp3+I_h[i][j]; //make sure intial value of temps are 0
+//				temp4=temp4+Q_h[i][j];
+//           end 
+//			end
+//			Qmult(temp3,temp5,Avg_I[i]);
+//			Qmult(temp4,temp5,Avg_Q[i]);
+//      end
+***************************************************************************************************************************************

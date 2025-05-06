@@ -1,0 +1,129 @@
+`timescale 1ns / 1ps
+
+module Qmult();
+parameter word=16;
+parameter fraction=10;
+parameter exponent=word-fraction-1;
+parameter int_upper=(2*fraction)+exponent; //upper limit of # int bits
+reg [word-1:0] I [0:167];
+reg [word-1:0] Q[0:167];
+reg [15:0] oo,tt;
+integer file,f,i;
+
+ initial  begin 
+ $readmemb("II.txt",I );
+ $readmemb("QQ.txt",Q );
+file=$fopen ("mm.txt","w");
+f=$fopen ("dd.txt","w");
+  #2 for (i=0;i<168;i=i+1) begin
+  Qmul(I[i],Q[i],oo);
+  Qdiv (I[i],Q[i],tt);
+ $fwrite (file,"%b\n",oo);
+ $fwrite (f,"%b\n",tt);
+ end  
+#10 $fclose (file);
+  $fclose (f);
+  #10;     
+  $finish;
+end
+task Qmul;  //to convert 32 single point into fixed point
+  input [word-1:0] a,b;
+  output [word-1:0] out; //extra bit for sign
+  reg [15:0] aa,bb;
+  reg [(2*word)-1:0] temp;
+  begin
+     // N=(2*fraction)+exponent; //upper limit of # int bits
+		if ((a[15]==1) && (b[15]==0)) //first i/p is -ve &2nd is +ve
+		begin
+		  aa=(~a)+16'h0001;  //2's comp to make it +ve
+		  temp=aa*b; //now (+ve * +ve)
+		  //temp=temp+sign;
+		  temp=(~temp)+16'h0001;//convert it to negative as supposed to be
+		  out=temp[int_upper:fraction];
+		end
+		else if ((b[15]==1) && (a[15]==0)) //first i/p is +ve &2nd is -ve
+      begin
+		  bb=(~b)+16'h0001;  //2's comp to make it +ve
+		  temp=a*bb;
+		  temp=(~temp)+16'h0001;//convert it to negative as supposed to be
+		  out=temp[int_upper:fraction];		  
+		end
+		else if ((b[15]==1) && (a[15]==1)) //both inputs are -ve
+		begin
+        aa=(~a)+16'h0001;
+		  bb=(~b)+16'h0001;
+		  temp=aa*bb;
+		  out=temp[int_upper:fraction];
+		end
+     	else
+		begin
+		  temp=a*b; //according to # int & fractions we keep only the int before and after the point
+		  out=temp[int_upper:fraction];
+		end
+  end	  
+endtask
+
+//***********************************************************************************
+task Qdiv;  //to convert 32 single point into fixed point
+  input signed [word-1:0] a,b; //a is Dividend & b is divisor
+  output [word-1:0] out; 
+  //parameter f_bits=14; //current # bits for fraction (word-int bits)
+  //parameter req_bits=9; //# required bits to dec frac bits to [max bits for frac(word-1)-5] 
+  reg [(2*word)-1:0] temp;
+  begin
+	 if (a==b)
+	   out =16'h0001<<fraction;  //check if equals =1 in Q14 format
+	 else if (a==(-1*b)) begin
+	    out =16'h0001<<fraction;
+		 out=(~out)+1;  // a=-b equals=-1 in Q14 format
+	 end
+	else begin //15 as its max possible # of fraction bits &10 as we need to mult the Dividend by 1000
+	  if (a[15]==1 && b[15]==1) begin
+	    a=(~a)+1;
+	    a=a>>>(fraction-(15-10)); //to decrese the range of fraction from 14 to 5
+		 a=a<<10;
+		 temp= a[(word-1):0]+{11'b0,1'b1,4'b0}; // a need to rounding (it must be applied)
+	    a=temp[15:5];   //take the integer bits only
+		 b=(~b)+1;
+		 b=b>>>(fraction-(15-10)); //as i want to to  mult by 1000 later--> 10 bits(2^10=1024)		 
+		 out=a/b;
+     end
+     else if  (a[15]==1 && b[15]==0) begin
+	    a=(~a)+1;
+	    a=a>>>(fraction-(15-10)); //to decrese the range of fraction from 14 to 5
+		 a=a<<10;
+		 temp= a[(word-1):0]+{11'b0,1'b1,4'b0}; // a need to rounding (it must be applied)
+	    a=temp[15:5];   //take the integer bits only
+		 //b=(~b)+1;
+		 b=b>>>(fraction-(15-10)); //as i want to to  mult by 1000 later--> 10 bits(2^10=1024)		 
+		 out=a/b;
+		 out=(~out)+1;
+	  end
+     else if  (b[15]==1 && a[15]==0) begin
+	    //a=(~a)+1;
+	    a=a>>>(fraction-(15-10)); //to decrese the range of fraction from 14 to 5
+		 a=a<<10;
+		 temp= a[(word-1):0]+{11'b0,1'b1,4'b0}; // a need to rounding (it must be applied)
+	    a=temp[15:5];   //take the integer bits only
+		 b=(~b)+1;
+		 b=b>>>(fraction-(15-10)); //as i want to to  mult by 1000 later--> 10 bits(2^10=1024)		 
+		 out=a/b;
+		 out=(~out)+1;
+	  end
+     else  begin
+	    //a=(~a)+1;
+	    a=a>>>(fraction-(15-10)); //to decrese the range of fraction from 14 to 5
+		 a=a<<10;
+		 temp= a[(word-1):0]+{11'b0,1'b1,4'b0}; // a need to rounding (it must be applied)
+	    a=temp[15:5];   //take the integer bits only
+		 //b=(~b)+1;
+		 b=b>>>(fraction-(15-10)); //as i want to to  mult by 1000 later--> 10 bits(2^10=1024)		 
+		 out=a/b;
+		 //out=(~out)+1;
+	  end	  
+	 out=out<<(fraction-(15-10)); //back it to the main Q format again like 
+	end
+  end	  
+ endtask
+  
+endmodule
