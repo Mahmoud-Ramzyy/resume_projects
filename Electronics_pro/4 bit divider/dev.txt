@@ -1,0 +1,51 @@
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_unsigned.all;
+use ieee.numeric_std.all;
+
+
+Entity divider is
+port(
+D:in std_logic_vector(7 downto 0);
+S:in std_logic_vector(3 downto 0);
+Q:out std_logic_vector(3 downto 0);
+R:out std_logic_vector(3 downto 0);
+clk:in std_logic;
+rst:in std_logic;
+start:in std_logic);
+end divider;
+
+architecture behavioral of divider is
+
+
+begin
+
+process(S,D)
+variable D1:std_logic_vector(4 downto 0);
+variable D2:std_logic_vector(3 downto 0);
+variable S1:std_logic_vector(4 downto 0);
+variable i : integer :=0;
+begin
+--if(rst='1') then
+--Q<="0000";
+--R<="0000";
+--else if (rising_edge(clk)) then
+D1:='0'&D(7 downto 4);
+D2:=D(3 downto 0);
+S1:='0'& S;
+for i in 0 to 3 loop
+D1:=D1(3 downto 0) & D2(3);
+D2:=D2(2 downto 0) & '0';
+if D1  >= S1 then
+D1 := D1 - S1;
+D2(0):= '1' ;
+end if;
+end loop ;
+--end if;
+R<=D1(3 downto 0);
+Q<=D2;
+--end if;
+end process;
+
+end behavioral;
