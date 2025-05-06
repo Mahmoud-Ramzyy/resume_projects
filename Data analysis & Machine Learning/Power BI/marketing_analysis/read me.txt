@@ -1,0 +1,12 @@
+This task consists of 3 files:
+1- pdf report to the first 4 requirements with python code plus the outputs
+   (check the code as in next step -kaggle link- is better)
+
+2- notebook in python code "MarketingAnalysis.ipynb" you can upload it in colab and 
+   drop the excel data "marketing_analysis.xslx" in the notebook if you want to add 
+   or modify anything or you can just check it on kaggle directly in below link:
+   https://www.kaggle.com/code/mahmoudramzy97/marketing-analysis-v1
+   as it's uploaded there with output
+
+3- Dashboard for the 5th requirement created by Power Bi "Dashboard.pbix" you can check it 
+   or modify in it as you want.
