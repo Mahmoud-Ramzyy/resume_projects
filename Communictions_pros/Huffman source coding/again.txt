@@ -1,0 +1,183 @@
+    if i==0    
+        path(r1,c1)=1;
+        path(r2,c2)=0;
+        
+    elseif prob(r2)==prob(r1)
+        path(r2,c2)=1;
+    elseif prob(r1)<prob(r2)
+        path(r2,c2)=0;
+    end
+    
+    %history:
+    his(r1,1)=r1; %reserve first col for row number
+    his(r1,2)=c1; %%reserve second col for col number
+    his(r1,3)=sum; %reserve  third col for the new prob value
+    %that results from the last 2 probs
+    [~,index]=find(prob==sum,1,'last'); %find the index of new prob value
+    his(r1,4)=index  %reserve 4th col for the new index
+    if i~=0
+        
+        co=1; %just for indication
+        for j=1:col
+            co=co+1;
+            if his(j,1)~=0
+                row=his(j,1);
+                c3=his(j,2)-1;
+                value=his(j,3);
+                %[~,c3]=find(path(row,:)==2,1,'last');
+                [~,ind]=find(prob(1,:)==value,1,'last');
+                in=ind;
+                if isempty(in) %check if the prob exists anymore
+                    if  his(j,3)<prob(r2)
+                        his(j,2)=c3; %updating
+                        his(j,3)=sum;
+                        if i~=no_stages
+                            path(row,c3)=1;
+                        else
+                            path(row,c3)=0;
+                        end
+                    elseif his(j,3)==prob(r2)
+                        path(row,c3)=0;
+                        his(j,2)=c3; %updating
+                        his(j,3)=sum;
+                        if i~=no_stages
+                            path(row,c3)=0;
+                        else
+                            path(row,c3)=1;
+                        end
+                    else
+                        
+                        if his(j,3)<prob(r2) %still the min prob-->last index
+                            % path(row,c3)=1;
+                            his(j,4)=in;  %updating
+                            his(j,3)=prob(in);
+                            if i~=no_stages
+                                path(row,c3)=1;
+                            else
+                                path(row,c3)=0;
+                            end
+                        elseif his(j,3)==prob(r2)  %the second min prob-->before last
+                            % path(row,c3)=0;
+                            his(j,4)=in;   %updating
+                            his(j,3)=prob(in);
+                            if i~=no_stages
+                                path(row,c3)=0;
+                            else
+                                path(row,c3)=1;
+                            end
+                        else
+                            his(j,4)=in; %just update index
+                        end
+                        
+                    end
+                end
+            end
+            
+        end
+    end
+
+
+
+sym=(1:10);
+pro=sort(prob,'descend');
+pro2=pro(1:10);
+[dict,avglen] = huffmandict(sym,pro2);
+
+
+
+
+
+
+
+
+
+
+        if prob(r2)<his(r1,3)
+            path(r2,c2)=0;  %was=1
+            path(r1,c1)=1; %%
+%             if prob(r1)==his(r1,3) %check the prev sum if will be summed again
+%                 path(r1-1:r1,c1)=0;
+%                 his(r1-1:r1,2)=c1;%update history
+%                 his(r1-1:r1,3)=sum;
+%                 his(r1-1:r1,4)=index;
+%             elseif prob(r3)<his(r1,3)
+%                 path(r3,c2)=0;
+%                 his(r3,1)=r3; %load the next row in history
+%                 his(r3,2)=c2;
+%                 his(r3,3)=sum;
+%                 his(r3,4)=index;
+%             end
+        else
+            path (r2,c2)=1;
+
+
+if his(j,3)~=prob(his(j,4))   %should be assigned bedfore
+                    row=his(j,1); %=9
+                    c3=his(j,2)-1;
+                    value=his(j,3);
+                    [~,ind]=find(prob(1,:)==value,1,'last'); %3
+                    
+                    if his(j,3)<prob(r2) %if present prob is the min-->last prob
+                        his(j,2)=c3; %updating
+                        his(j,3)=sum;
+                        path(row,c3)=1;
+                        check=isempty(ind);
+                        if check==0%check if the prob exists anymore and
+                            his(j,4)=ind
+                            
+                        end
+                    elseif his(j,3)==prob(r2)
+                        his(j,2)=c3; %updating
+                        his(j,3)=sum;
+                        path(row,c3)=0;
+                        if ~isempty(ind)%check if the prob exists anymore and
+                            his(j,4)=ind;
+                        end
+                    else
+                        his(j,4)=ind; %just update index
+                    end
+                else
+                    
+                end
+            end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                %check if the index has left its pos
+                if ind~=1
+                    if value~=prob(his(j,4)) || value==prob(ind-1)
+                        
+                        check=isempty(ind); %check if prob exists anymore or not
+                        if check==0 %still exists
+                            his(j,4)=ind; %update the index
+                            if ind==r2 %check if the new pos at before last index
+                                path(row,c3)=0;
+                                his(j,3)=prob(r1); %last prob
+                                his(j,4)=r1;
+                                his(j,2)=c3;
+                            elseif ind==r1  %check if the new pos at last index
+                                path(row,c3)=1;
+                                his(j,3)=prob(r1); %last prob
+                                his(j,4)=r1;
+                                his(j,2)=c3;
+                            end
+                        else %vanished
+                            path(row,c3)=1;
+                            his(j,3)=prob(r1); %last prob
+                            his(j,4)=r1;
+                            his(j,2)=c3;
+                        end
+                        
+                    end
+                end

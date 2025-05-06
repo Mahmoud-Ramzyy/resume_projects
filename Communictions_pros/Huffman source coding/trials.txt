@@ -1,0 +1,67 @@
+[r,c]=find(ff(1,:)==2,1)
+
+
+ [r,c]=find(ff(1,:)==2,1,'last')
+
+
+
+
+    col_no=col-i; %just a memory to track the path
+    sum=prob(col-i-1); 
+    Memory(1,i+1)=sum;
+    Memory(2,i+1)=col_no;
+
+
+
+
+[row,index] = find(nprob==prob(col-i-1),1); %find the indexnumber after sorting
+ if i==0 ||index>col-i-1 %general case
+        path(col-i,col)=1; %assigns 0 and 1 for the summed symbol probs 
+        path(col-1-i,col)=0;  %in the path matrix
+    elseif index<col-i-1  %still the min prob-->last index
+        path(col-1-i,col)=0;
+        path(col-i,col-i)=1;
+        prev_col=Memory(2,i); %special case
+        path(prev_col,col-i)=path(col-i,col-i); %=1  
+    elseif index==col-i-1 %the second min prob-->before last
+        path(col-1-i,col)=0;
+        path(col-i,col-i)=1;
+        prev_col=Memory(2,i); %special case
+        path(prev_col,col-i)=path(col-1-i,col); %=0
+    elseif i==no_stages
+
+
+
+path = zeros(10);
+path(:,:)=2;
+[r2,c2]=find(path(9,:)==2,1,'last');
+
+
+
+
+
+
+
+
+
+
+ row=his(j,1);
+        if his(j,3)~=prob(his(j,4)) && his(j,3)~=0 %it summed again
+            [~,c3]=find(path(row,:)==2,1,'last');
+            [~,ind]=find(prob==his(j,3),1,'last');
+            if  his(j,3)<r2  %still the min prob-->last index
+                path(row,c3)=1; 
+                his(j,4)=ind;  %updating
+                his(j,3)=prob(ind);
+                
+            elseif his(j,3)==r2  %the second min prob-->before last
+                path(row,c3)=0; 
+                his(j,4)=ind;   %updating
+                his(j,3)=prob(ind);
+            else
+                his(j,4)=ind; %just update index  
+            end
+        end
+
+
+

@@ -1,0 +1,67 @@
+similar code:
+
+https://www.mathworks.com/matlabcentral/answers/459170-image-compression-huffman-coding
+
+gray scale:
+
+https://www.geeksforgeeks.org/matlab-rgb-image-to-grayscale-image-conversion/
+
+
+
+
+
+for i=0:no_stages
+    prob(col-i-1)=prob(col-i)+prob(col-i-1); %sum the last r sym probs
+    nprob=prob(1:col-i-1); %new vector with less symbols by (i+1)
+    nprob=sort(nprob,'descend'); %arrange the new vector again
+    [row,col2] = find(nprob==prob(col-i-1),1);
+    if i==0
+        path(col,col)=1; %assigns 0 and 1 for the summed symbol probs 
+        path(col-1,col)=0;  %in the path matrix
+    elseif col2<col-i-1  %stil the min prob-->last index
+        path(col-i-1,col)=0; 
+        path(col-i,col-i)=1;
+        path(col,col-i)= path(col-i,col-i);
+
+
+
+
+
+
+for i=0:no_stages
+    prob(col-i-1)=prob(col-i)+prob(col-i-1); %sum the last r sym probs
+    nprob=prob(1:col-i-1); %new vector with less symbols by (i+1)
+    nprob=sort(nprob,'descend'); %arrange the new vector again
+    [row,col2] = find(nprob==prob(col-i-1),1);
+    if i==0 ||col2>col-i-1 %general case
+        path(col-i,col)=1; %assigns 0 and 1 for the summed symbol probs 
+        path(col-1-i,col)=0;  %in the path matrix
+        
+    elseif col2<col-i-1  %still the min prob-->last index
+        path(col-i-1,col)=0; 
+        path(col-i,col-i)=1;
+        path(col,col-i)= path(col-i,col-i);
+
+
+
+
+
+
+
+
+%% 
+% %variables using to find the probability
+% cnt=1;
+% sigma=0;
+% %computing the cumulative probability.
+% for i=0:255
+% k=gimg==i;
+% count(cnt)=sum(k(:))
+% %pro array is having the probabilities
+% pro(cnt)=count(cnt)/Totalcount;
+% sigma=sigma+pro(cnt);
+% cumpro(cnt)=sigma;
+% cnt=cnt+1;
+% end;
+        
+        

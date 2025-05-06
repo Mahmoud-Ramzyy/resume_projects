@@ -1,0 +1,52 @@
+his(:,5)=ref;
+        for j=3:col
+            if his(j,1)~=0 
+                row=his(j,1);
+                c3=his(j,2)-1;
+                value=his(j,3);
+                pos=his(j,4);
+                [~,ind]=find(prob(1,:)==value,1,'last');
+                check=isempty(ind); %check if prob exists anymore or not
+                if check==0
+                    if his(j,3)==his(j,5)
+                        if prob(pos+1)~=ref(pos+1) || prob(pos-1)~=ref(pos-1)
+                            %there 's change in index
+                            his(j,4)=pos+1;
+                            if his(j,4)==r2 %before last index
+                                path(row,c3)=0;
+                                his(j,3)=sum; %updating
+                                his(j,4)=index;%index not r2 as related to new sum
+                                his(j,2)=c3;
+                            elseif his(j,4)==r1
+                                path(row,c3)=1;
+                                his(j,3)=sum; %updating
+                                his(j,4)=index;%index not r1 as related to new sum
+                                his(j,2)=c3;
+                            end
+                        end
+                    else
+                        if his(j,4)==r2 %before last index
+                            path(row,c3)=0;
+                            his(j,3)=sum; %updating
+                            his(j,4)=index;%index not r2 as related to new sum
+                            his(j,2)=c3;
+                        elseif his(j,4)==r1
+                            path(row,c3)=1;
+                            his(j,3)=sum; %updating
+                            his(j,4)=index;%index not r1 as related to new sum
+                            his(j,2)=c3;
+                        end
+                        
+%                     else %this prob is vanished-->index=last or before the last
+%                         his(j,3)=sum; %update new prob
+%                         his(j,4)=index; %index not ind
+%                         path(row,c3)=1;
+%                         his(j,2)=c3;
+%                         
+                    end
+                    
+                end
+            end
+            
+        end
+    end

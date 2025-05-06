@@ -1,0 +1,137 @@
+function code_word=Huff_Dic(prob,col)
+ %in our image the first 10 symbols only have a prob
+prob=prob(1:col); %but in general case col should be =256
+path = zeros(col); %to track the path of each symbol
+his = zeros(col,4); %as a memory for prev symbols
+%his(:,5)=prob; % the 5th col is a ref version of probs
+path(:,:)=2; %give its indices any value except 0,1 for indication
+no_stages=col-2; %no of required stages till having r=2 symblos
+no_bits=1; 
+while col>2^no_bits
+    no_bits=no_bits+1;
+end         %4 bits to represent 10 symbols-->(2^4=16>10)
+
+
+for i=0:no_stages
+    r1=col-i;
+    r2=col-i-1;
+    
+    prob(r2)=prob(r1)+prob(r2); %sum the last r sym probs
+    sum=prob(r2);
+    prob(r1)=0;
+    prob=sort(prob,'descend'); %arrange the new vector again
+   % his(:,5)=prob;
+    
+    
+    %assign 0&1 for code word and tracking
+    [~,c1]=find(path(r1,:)==2,1,'last');
+    [~,c2]=find(path(r2,:)==2,1,'last');
+    path(r1,c1)=1;
+    path(r2,c2)=0;
+   
+    %history:
+    his(r1,1)=r1; %reserve first col for row number
+    his(r1,2)=c1; %%reserve second col for col number
+    his(r1,3)=sum; %reserve  third col for the new prob value
+    %that results from the last 2 probs
+   [~,index]=find(prob==sum,1,'last'); %find the index of new prob value
+    his(r1,4)=index  %reserve 4th col for the new index
+    if i~=0 
+        
+        co=1; %just for indication
+        for j=1:col
+        co=co+1;
+     if his(j,1)~=0
+            row=his(j,1);
+            c3=his(j,2)-1;
+            value=his(j,3);
+            %[~,c3]=find(path(row,:)==2,1,'last');
+            [~,ind]=find(prob(1,:)==value,1,'last');
+            in=ind;
+         if isempty(in) %check if the prob exists anymore
+                if  his(j,3)<prob(r2) 
+                    his(j,2)=c3; %updating
+                    his(j,3)=sum;
+                    if i~=no_stages
+                        path(row,c3)=1;
+                    else
+                        path(row,c3)=0;
+                    end
+                elseif his(j,3)==prob(r2)
+                    path(row,c3)=0;
+                    his(j,2)=c3; %updating
+                    his(j,3)=sum; 
+                    if i~=no_stages
+                        path(row,c3)=0;
+                    else
+                        path(row,c3)=1;
+                    end                  
+                else
+                
+           if his(j,3)<prob(r2) %still the min prob-->last index
+               % path(row,c3)=1; 
+                his(j,4)=in;  %updating
+                his(j,3)=prob(in);
+                     if i~=no_stages
+                        path(row,c3)=1;
+                    else
+                        path(row,c3)=0;
+                    end               
+           elseif his(j,3)==prob(r2)  %the second min prob-->before last
+               % path(row,c3)=0; 
+                his(j,4)=in;   %updating
+                his(j,3)=prob(in);
+                    if i~=no_stages
+                        path(row,c3)=0;
+                    else
+                        path(row,c3)=1;
+                    end            
+          else
+                his(j,4)=in; %just update index  
+           end
+            
+                end
+        end
+    end
+                
+        end     
+    end
+            
+            
+      
+code_word=path(:,col-no_bits:end); %take the last 4 cols 
+
+end
+
+
+
+
+
+
+
+
+
+   %history and assigning 0&1:
+    if i==0    
+        path(r1,c1)=1;
+        path(r2,c2)=0;
+
+    elseif prob(r2)==prob(r1)
+        path(r2,c2)=1;
+    elseif prob(r1)<prob(r2)
+        path(r2,c2)=0;
+%         for j=2:col
+%             if his(j,1)~=0
+%                 path(his(j,1),his(j,2))=0;                
+%             end
+%         end    
+    end
+
+
+
+
+
+
+
+
+  
