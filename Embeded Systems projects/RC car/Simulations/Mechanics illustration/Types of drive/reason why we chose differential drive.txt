@@ -1,0 +1,2 @@
+we found that differential drive "motor for each wheel controls direction together and movement together "is easier and more controlled for line tracking and more used in robot world 
+so it is better choice than  steer drive type "motor for movement and another for direction" which is more used in real world.
