@@ -1,0 +1,67 @@
+go atlas
+contact name=polysi workfunction=4.2
+#select models
+MODELS fermi bgn srh consrh conmob fldmob mosfet
+#
+solve init
+output val.band con.band charge e.lines band.param PERMITTIVITY
+#
+save outf=fil1.str
+tonyplot fil1.str
+#
+# do IDVG characteristic
+#
+#method newton gummel
+solve vdrain=0
+solve vdrain=0.005
+solve vdrain=0.01
+solve vdrain=0.015
+solve vdrain=0.02
+solve vdrain=0.025
+solve vdrain=0.03
+solve vdrain=0.035
+solve vdrain=0.05
+solve vdrain=0.10
+solve vdrain=0.25
+solve vdrain=0.50
+solve vdrain=1
+output val.band con.band charge e.lines band.param PERMITTIVITY
+save outf=fil2.str
+tonyplot fil2.str
+#
+# ramp gate voltage
+log outf=sol.log master
+solve name=gate vstep=0.05 vfinal=1 ac direct frequency=1e06
+output val.band con.band u.bbt charge e.lines band.param
+save outf=fil3.str
+tonyplot fil3.str
+extract init inf="sol.log"
+extract name="Iamb" y.val from curve(v."gate", i."drain") where x.val=-1
+extract name="Ioff" min(curve(v."gate", i."drain"))
+extract name="Ion1" y.val from curve(v."gate", i."drain") where x.val=1
+extract init inf="sol.log"
+# SS:
+extract name="subvt" 1.0/slope(maxslope(curve(abs( v."gate"),log10(abs(i."drain") ))))
+#and this for vt:
+extract name="vt" x.val from curve(v."gate", i."drain") where y.val=1e-7
+#
+extract name="Ioff" min(curve(v."gate", i."drain"))
+extract name="Ion" y.val from curve(v."gate", i."drain") where x.val=1
+extract name="Ion/Ioff" (y.val from curve(v."gate", i."drain") where x.val=1) / min(curve(v."gate", i."drain"))
+# SS:
+extract name="subvt" 1.0/slope(maxslope(curve(abs( v."gate"),log10(abs(i."drain") ))))
+### P-channel DIBL Test : Returns Vt with 0.1 and 3 volts Vd ## and a DIBL Parameter ####
+# extract the next device parameter wuth the drain now at 3 volts....
+extract init inf=sol.log
+# put ur file name here
+extract name="pvt2" x.val from curve(abs(v."gate"),abs(i."drain")) where y.val=0.1e-6
+# Calculate a DIBL parameter....in V/V
+extract name="pdibl" ($"pvt1"-$"pvt2")/(3.0-0.1)
+#### Nmos DIBL Test : Returns Vt with 0.1 and 3 volts Vd ####
+# extract the next device parameter with the drain now at 3 volts....
+extract init inf=sol.log
+# put ur file name here
+extract name="nvt2" x.val from curve(abs(v."gate"),abs(i."drain")) where y.val=0.1e-6
+# Calculate a DIBL parameter....in V/V
+extract name="ndibl" ($"nvt1"-$"nvt2")/(3.0-0.1)
+quit

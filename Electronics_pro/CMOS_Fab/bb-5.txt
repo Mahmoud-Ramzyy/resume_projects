@@ -1,0 +1,454 @@
+
+go athena 
+set scalling=3
+
+#define and use a global shrnk variable...
+
+line x loc=0*$scalling spac=0.1
+line x loc=2.5*$scalling  spac=0.1
+line x loc=5*$scalling  spac=0.1
+
+line y loc=0 spac=0.1
+line y loc=1 spac=1
+line y loc=2 spac=2
+
+# step 1 make p-mos wafer
+init silicon boron resistivity=10 orientation=100
+#init c.boron=1.0e14 orientation=100
+
+##N-well creation (we make n-well to create p-mos inside n-well)
+
+# step 2 make thin buffer 
+deposit oxide thick=0.01 divisions= 1
+# step 3 nitride deposition 
+deposit nitride thick=0.15 divisions= 5
+# step 4 photo resist
+deposit photoresist thick=0.5 divisions=2 
+#step 5 develop PR
+etch photoresist right p1.x=2.5*$scalling 
+# step 5 etch nitride 
+etch nitride right p1.x=2.5*$scalling 
+# step 6 n-well implant
+implant phosphor dose=6.8e15 energy=150 pear
+strip 
+
+structure outf=N_well.str
+#tonyplot N_well.str
+
+####P-well creation (we make p-well with specific doping to create n-mos)
+
+# step 7 locos mask 
+diffus time=30 minutes temp=1000 weto2 
+#step 8 etch nitride 
+etch nitride left p1.x=2.5*$scalling  
+# step 9 p-well implant 
+implant boron dose=1.6e16 energy=50 pear
+# step 10 wells drive-in 
+diffus time=120 minutes temp=1200 nitro press=1 
+
+structure outf=P_well.str
+#tonyplot P_well.str
+
+##FOX creation (we make fox to isolate between n-mos & p-mos )
+
+#step 11 etch oxide 
+etch oxide all 
+#step 12 pad thermal oxide  
+deposit oxide thick=0.01 divisions=1 
+# step 13 nitride deposition 
+deposit nitride thick=0.15 divisions= 2
+# mask 2 
+deposit photoresist thick=0.5 divisions=2 
+#step 14 & step 15 locos fox & etch nitride 
+#window of mask 2 
+
+etch photoresist left p1.x=0.2*$scalling 
+etch photoresist right p1.x=4.8*$scalling 
+
+etch nitride left p1.x=0.2*$scalling 
+etch nitride right p1.x=4.8*$scalling 
+
+#for tie window
+etch photoresist start x=0.9*$scalling  y=-2
+etch cont x=0.9*$scalling  y=2 
+etch cont x=1.2*$scalling  y=2 
+etch done x=1.2*$scalling  y=-2
+
+etch nitride start x=0.9*$scalling  y=-2
+etch cont x=0.9*$scalling  y=2 
+etch cont x=1.2*$scalling  y=2 
+etch done x=1.2*$scalling  y=-2
+
+#for fox inbtn 2 devicies
+etch photoresist start x=2.3*$scalling  y=-2
+etch cont x=2*$scalling  y=2 
+etch cont x=2.8*$scalling  y=2 
+etch done x=2.8*$scalling  y=-2
+
+etch nitride start x=2.3*$scalling  y=-2
+etch cont x=2*$scalling  y=2 
+etch cont x=2.8*$scalling  y=2 
+etch done x=2.8*$scalling  y=-2
+#for tie window
+etch photoresist start x=3.8*$scalling  y=-2
+etch cont x=3.8*$scalling  y=2 
+etch cont x=4.1*$scalling  y=2 
+etch done x=4.1*$scalling  y=-2
+
+etch nitride start x=3.8*$scalling  y=-2
+etch cont x=3.8*$scalling  y=2 
+etch cont x=4.1*$scalling  y=2 
+etch done x=4.1*$scalling  y=-2
+etch photoresist all 
+
+## make channel stopper (to prevent parasitic channel may be formed due to invertion)
+#step16 mask 3 
+deposit photoresist thick=0.5 divisions=2 
+# develope PR
+etch photoresist left p1.x=2.5*$scalling  
+# step 17 channel stopper
+implant boron dose=8.0e13 energy=100 pear
+strip
+
+# step 18 & 19 locos (fox ) 
+method grid.oxide=0.05
+diffuse temp=1200 time=30 wet
+strip nitride
+etch oxide dry thick=0.02
+
+structure outf=FOX.str
+#tonyplot FOX.str
+
+##Pmos Vth adjust  ( modifine doping to change Vth)
+ 
+#step 20 sacrifical oxide growth 
+diffuse temp=900 time=10 dry
+# step 21 threthold adjust 
+implant boron dose=7e11 energy=60 pear
+# step 22 photo resist (mask4)
+deposit photoresist thick=0.5 divisions=2 
+#step 22 develop PR
+etch photoresist right p1.x=2.5*$scalling  
+# step 23  pmos vth threthold adjust 
+implant boron dose=2.6e12 energy=60 pear
+
+# step 24  strip pR & etch sacrificial oxide 
+strip
+etch oxide dry thick=0.02
+
+structure outf=Vth_adjust.str
+#tonyplot Vth_adjust.str
+
+##Gate creation 
+ 
+#step 25 gate oxide
+diffus time=1 minutes temp=1052 dryo2 press=1 hcl.pc=3 
+
+#
+extract name="P_tox" thickness material="SiO~2" mat.occno=1 x.val=1.5*$scalling 
+extract name="N_tox" thickness material="SiO~2" mat.occno=1 x.val=2.967*$scalling
+
+# step 26 poly dep
+deposit polysilicon thick=0.3 divisions=10 
+#Mask 4
+deposit photoresist thick=0.5 divisions=2 
+# P-gate
+etch photoresist left p1.x=4.825
+etch polysilicon left p1.x=4.825
+
+#structure outf=P_gate.str
+#tonyplot P_gate.str
+
+# N-gate   
+etch photoresist right p1.x=10.175
+etch polysilicon  right p1.x=10.175 
+# in btn P&N-gate mask
+etch photoresist start x=5.175  y=-2 
+etch cont x=9.825  y=-2 
+etch cont x=9.825  y=2 
+etch done x=5.175  y=2 
+
+etch polysilicon start x=5.175  y=-2 
+etch cont x=9.825  y=-2 
+etch cont x=9.825  y=2 
+etch done x=5.175  y=2 
+
+strip 
+
+structure outf=gate.str
+#tonyplot gate.str
+
+
+##N_LDD D/S creation 
+
+#step 32 mask 6 n-select
+deposit photoresist thick=0.5 divisions=2 
+
+# N-select mask
+etch photoresist start x=1*$scalling y=-2 
+etch cont x=2.5*$scalling y=-2 
+etch cont x=2.5*$scalling y= 2 
+etch done x=1*$scalling y= 2
+
+etch photoresist start x=12 y=-2 
+etch cont x=14.5 y=-2 
+etch cont x=14.5 y= 2 
+etch done x=12 y= 2
+
+# step 33 N D/S LDD
+implant phosphor dose=2.5e13 energy=60 tilt=10 fullrot crystal 
+# step 34 
+strip
+
+structure outf=N_LDD_DS.str
+#tonyplot N_LDD_DS.str
+
+##P_LDD D/S creation:
+#step 35 mask#7 p-select
+deposit photoresist thick=0.5 divisions=2 
+# P-select mask
+etch photoresist left p1.x=1*$scalling
+
+etch photoresist start x=2.5*$scalling y=-2 
+etch cont x=12 y=-2 
+etch cont x=12 y= 2 
+etch done x=2.5*$scalling y= 2
+# step 36&37 P  D/S LDD 
+implant boron dose=4e13 energy=50 tilt=10 fullrot crystal 
+
+strip
+
+structure outf=P_LDD_DS.str
+#tonyplot P_LDD_DS.str
+
+##preparing to create a spacer (to cover LDD to create deep D/S)
+# 
+deposit nitride thick=0.4 divisions=3  
+
+# Spacer nitride  Etch
+etch nitride dry thick=0.4 
+
+structure outf=Spacer.str
+#tonyplot Spacer.str
+
+deposit photoresist thick=0.5 divisions=2 
+
+# N-select mask again
+etch photoresist start x=1*$scalling y=-2 
+etch cont x=2.5*$scalling y=-2 
+etch cont x=2.5*$scalling y= 2 
+etch done x=1*$scalling y= 2
+
+etch photoresist start x=12 y=-2 
+etch cont x=14.5 y=-2 
+etch cont x=14.5 y= 2 
+etch done x=12 y= 2
+
+## N Deep D/S creation:
+# N Deep D/S 
+implant phosphor dose=4e15 energy=120 tilt=10 fullrot crystal 
+
+strip
+structure outf=N_Deep_DS.str
+#tonyplot N_Deep_DS.str
+
+deposit photoresist thick=0.5 divisions=2 
+# P-select mask again
+etch photoresist left p1.x=1*$scalling
+
+etch photoresist start x=2.5*$scalling y=-2 
+etch cont x=12 y=-2 
+etch cont x=12 y= 2 
+etch done x=2.5*$scalling y= 2
+
+## P Deep D/S 
+implant boron dose=2e15 energy=110 tilt=10 fullrot crystal 
+
+strip
+structure outf=P_Deep_DS.str
+#tonyplot P_Deep_DS.str
+
+##Salcidation: (to prevent the penetration of AL in to silicon of active area)
+# step 46 etch damage oxide  
+etch oxide dry thick=0.01 
+# step 47salcidation
+deposit titanium thick=0.03 divisions=2 
+# step 48 RTA ( to avoid affecting the previous junction depths)
+method fermi 
+diffus time=1 sec temp=600 nitro press=1 
+etch titanium dry thick=0.03
+
+structure outf=Salicidation.str
+#tonyplot Salicidation.str
+
+##1St isolation: ( to isolate between contact )
+# 
+deposit oxide thick=0.8 divisions=10
+  
+#planarization 
+etch oxide above p1.y=-0.6
+
+##contact cuts creation:
+#mask of CC
+deposit photoresist thick=0.5 divisions=2 
+
+etch photoresist start x=0.5*$scalling  y=-2
+etch cont x=0.5*$scalling  y=2 
+etch cont x=0.6*$scalling  y=2 
+etch done x=0.6*$scalling  y=-2
+
+etch photoresist start x=4.1  y=-2
+etch cont x=4.1  y=2 
+etch cont x=4.4  y=2 
+etch done x=4.4  y=-2
+
+etch photoresist start x=5.6  y=-2
+etch cont x=5.6  y=2 
+etch cont x=5.9  y=2 
+etch done x=5.9  y=-2
+
+etch photoresist start x=3*$scalling  y=-2
+etch cont x=3*$scalling  y=2 
+etch cont x=3.1*$scalling  y=2 
+etch done x=3.1*$scalling  y=-2
+
+etch photoresist start x=10.6  y=-2
+etch cont x=10.6  y=2 
+etch cont x=10.9  y=2 
+etch done x=10.9  y=-2
+
+etch photoresist start x=4.4*$scalling  y=-2
+etch cont x=4.4*$scalling  y=2 
+etch cont x=4.5*$scalling  y=2 
+etch done x=4.5*$scalling  y=-2
+
+etch oxide start x=0.5*$scalling  y=-2
+etch cont x=0.5*$scalling  y=2 
+etch cont x=0.6*$scalling  y=2 
+etch done x=0.6*$scalling  y=-2
+
+etch oxide start x=4.1  y=-2
+etch cont x=4.1  y=2 
+etch cont x=4.4 y=2 
+etch done x=4.4  y=-2
+
+etch oxide start x=5.6  y=-2
+etch cont x=5.6  y=2 
+etch cont x=5.9  y=2 
+etch done x=5.9  y=-2
+
+etch oxide start x=3*$scalling  y=-2
+etch cont x=3*$scalling  y=2 
+etch cont x=3.1*$scalling  y=2 
+etch done x=3.1*$scalling  y=-2
+
+etch oxide start x=10.6  y=-2
+etch cont x=10.6  y=2 
+etch cont x=10.9  y=2 
+etch done x=10.9  y=-2
+
+etch oxide start x=4.4*$scalling  y=-2
+etch cont x=4.4*$scalling  y=2 
+etch cont x=4.5*$scalling  y=2 
+etch done x=4.5*$scalling  y=-2
+
+strip
+# step 54 contacts
+deposit tungsten thick=0.7 divisions=2 
+etch tungsten above p1.y=-0.6
+
+## M1 creation
+deposit aluminum thick=0.2 divisions=2 
+
+etch aluminum start x=4.4  y=-2
+etch cont x=4.4  y=2 
+etch cont x=5.6 y=2 
+etch done x=5.6  y=-2
+
+etch aluminum start x=3.1*$scalling  y=-2
+etch cont x=3.1*$scalling  y=2 
+etch cont x=10.6  y=2 
+etch done x=10.6  y=-2
+
+
+structure outf=CMOS.str
+#tonyplot CMOS.str
+
+#junction depth
+extract name="n++ xj"xj silicon mat.occno=1 x.val=3.658*$scalling junc.occno=1
+extract name="P++ xj"xj silicon mat.occno=1 x.val=1.3315*$scalling junc.occno=1
+
+##Biasing: (To enable biasing in the device simulator ATLAS)
+
+electrode name=gate x=5 y=-0.2
+electrode name=gate x=10 y=-0.2
+electrode name=drain x=5.7 y=-0.7
+#electrode name=drain x=9.1 y=-0.7
+electrode name=source x=4.2 y=-0.7
+electrode name=source x=10.7 y=-0.7
+#electrode name=bulk x=1.5 y=-0.7
+#electrode name=bulk x=13.3 y=-0.7
+
+
+go atlas
+contact name=polysi workfunction=4.2
+#select models
+MODELS fermi bgn srh consrh conmob fldmob mosfet
+#
+solve init
+output val.band con.band charge e.lines band.param PERMITTIVITY
+#
+save outf=fil1.str
+#tonyplot fil1.str
+#
+# do IDVG characteristic
+#
+#method newton gummel
+solve vdrain=0
+solve vdrain=0.005
+solve vdrain=0.01
+solve vdrain=0.015
+solve vdrain=0.02
+solve vdrain=0.025
+solve vdrain=0.03
+solve vdrain=0.035
+solve vdrain=0.05
+solve vdrain=0.10
+solve vdrain=0.25
+solve vdrain=0.50
+solve vdrain=1
+output val.band con.band charge e.lines band.param PERMITTIVITY
+save outf=fil2.str
+#tonyplot fil2.str
+#
+# ramp gate voltage
+log outf=metalization.log master
+solve name=gate vstep=0.05 vfinal=1 ac direct frequency=1e06
+output val.band con.band u.bbt charge e.lines band.param
+save outf=fil3.str
+#tonyplot fil3.str
+
+#and this for vt
+extract name="vt" (xintercept(maxslope(curve(v."gate",abs(i."drain")))) \
+- abs(ave(v."drain"))/2.0)
+#
+extract name="Ioff" min(curve(v."gate", i."drain"))
+extract name="Ion" y.val from curve(v."gate", i."drain") where x.val=1
+extract name="Ion/Ioff" (y.val from curve(v."gate", i."drain") where x.val=1) / min(curve(v."gate", i."drain"))
+# SS:
+extract name="subvt" 1.0/slope(maxslope(curve(abs( v."gate"),log10(abs(i."drain") ))))
+### P-channel DIBL Test : Returns Vt with 0.1 and 3 volts Vd ## and a DIBL Parameter ####
+# extract the next device parameter wuth the drain now at 3 volts....
+extract init inf="metalization.log"
+# put ur file name here
+extract name="metalization" x.val from curve(abs(v."gate"),abs(i."drain")) where y.val=0.1e-6
+# Calculate a DIBL parameter....in V/V
+extract name="pdibl" ($"pvt1"-$"metalization")/(3.0-0.1)
+#### Nmos DIBL Test : Returns Vt with 0.1 and 3 volts Vd ####
+# extract the next device parameter with the drain now at 3 volts....
+extract init inf="metalization.log"
+# put ur file name here
+extract name="metalization" x.val from curve(abs(v."gate"),abs(i."drain")) where y.val=0.1e-6
+# Calculate a DIBL parameter....in V/V
+extract name="ndibl" ($"nvt1"-$"metalization")/(3.0-0.1)
+

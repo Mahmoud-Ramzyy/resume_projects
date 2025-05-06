@@ -1,0 +1,140 @@
+
+go athena 
+#define and use a global shrnk variable...
+
+line x loc=0 spac=0.1
+line x loc=5 spac=0.1
+
+line y loc=0 spac=0.1
+line y loc=1 spac=1
+line y loc=2 spac=2
+
+
+
+# step 1 make p-mos wafer
+init silicon boron resistivity=10 orientation=100
+
+# #preparing for N-well
+
+# step 2 make thin buffer 
+deposit oxide thick=0.01 divisions= 1
+
+# step 3 nitride deposition 
+ 
+deposit nitride thick=0.15 divisions= 5
+# step 4 photo resist
+deposit photoresist thick=0.5 divisions=2 
+#step 5 develop PR
+etch photoresist right p1.x=2.5 
+# step 5 etch nitride 
+etch nitride right p1.x=2.5 
+# step 6 n-well implant
+implant phosphor dose=9.5e12 energy=150 tilt=0 fullrot crystal 
+
+strip 
+
+# step 7 locos mask 
+diffus time=30 minutes temp=1000 weto2 
+
+#step 8 etch nitride 
+etch nitride left p1.x=2 
+
+# step 9 p-well implant 
+implant boron dose=2.0e13 energy=50 tilt=0 fullrot crystal 
+
+# step 10 wells drive-in 
+diffus time=120 minutes temp=1200 nitro press=1 
+
+#  step 11 etch oxide 
+
+etch oxide all 
+
+# step 12 pad thermal oxide  
+deposit oxide thick=0.01 divisions=1 
+
+# step 13 nitride deposition 
+deposit nitride thick=0.15 divisions= 2
+
+# mask 2 
+deposit photoresist thick=0.5 divisions=2 
+#سفثح ي
+#step 14 & step 15
+
+##window of mask 2
+etch photoresist left p1.x=0.2
+etch photoresist right p1.x=4.8
+
+etch nitride left p1.x=0.2
+etch nitride right p1.x=4.8
+
+#for tie window
+etch photoresist start x=0.9 y=-2
+etch cont x=0.9 y=2 
+etch cont x=1.2 y=2 
+etch done x=1.2 y=-2
+
+etch nitride start x=0.9 y=-2
+etch cont x=0.9 y=2 
+etch cont x=1.2 y=2 
+etch done x=1.2 y=-2
+
+#for fox inbtn 2 devicies
+etch photoresist start x=2.3 y=-2
+etch cont x=2 y=2 
+etch cont x=2.8 y=2 
+etch done x=2.8 y=-2
+
+etch nitride start x=2.3 y=-2
+etch cont x=2 y=2 
+etch cont x=2.8 y=2 
+etch done x=2.8 y=-2
+#for tie window
+etch photoresist start x=3.8 y=-2
+etch cont x=3.8 y=2 
+etch cont x=4.1 y=2 
+etch done x=4.1 y=-2
+
+etch nitride start x=3.8 y=-2
+etch cont x=3.8 y=2 
+etch cont x=4.1 y=2 
+etch done x=4.1 y=-2
+etch photoresist all 
+
+structure outf=anelex28_0.str 
+
+
+#step16 mask 3
+deposit photoresist thick=0.5 divisions=2 
+# develope PR
+etch photoresist left p1.x=2.5 
+
+# step 17 channel stopper
+implant boron dose=8.0e13 energy=100 tilt=0 fullrot crystal 
+
+strip
+
+method grid.oxide=0.05
+
+structure outf=anelex28_99.str 
+diffuse temp=1000 time=20 wet
+
+structure outf=anelex28_98.str 
+strip nitride
+
+structure outf=anelex28_97.str 
+etch oxide dry thick=0.02
+structure outf=anelex28_96.str 
+
+diffuse temp=900 time=10 dry
+
+structure outf=anelex28_95.str 
+
+
+
+ 
+
+
+
+
+
+

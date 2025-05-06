@@ -1,0 +1,106 @@
+﻿go athena 
+#define and use a global shrnk variable...
+set shrnk=0.9
+
+line x loc=0*$shrnk spac=0.1
+line x loc=5.6*$shrnk spac=0.1
+
+line y loc=0 spac=0.1
+line y loc=1 spac=1
+line y loc=2 spac=2
+
+init silicon c.boron=1e14 space.mult=0.25
+
+deposit oxide thick=0.01 div=1
+deposit nitride thick=0.15 divi=2
+deposit photo thick=0.5 divi=2
+
+etch photo left p1.x=2.2*$shrnk
+etch nitride left p1.x=2.2*$shrnk
+
+implant boron energy=50 dose=1.2e13
+
+strip
+
+diffuse temp=1000 time=30 wet
+
+strip nitride
+
+implant phosph dose=1e13 energy=30
+
+diffuse temp=1200 time=120 nitrogen
+
+strip oxide 
+
+deposit oxide thick=0.01 div=1
+deposit nitride thick=0.15 divi=5
+
+# mask 2 
+deposit photoresist thick=0.5 divisions=2 
+#سفثح ي
+#step 14 & step 15
+
+##window of mask 2
+etch photoresist left p1.x=0.2
+etch photoresist right p1.x=4.8
+
+etch nitride left p1.x=0.2
+etch nitride right p1.x=4.8
+
+#for tie window
+etch photoresist start x=0.9 y=-2
+etch cont x=0.9 y=2 
+etch cont x=1.2 y=2 
+etch done x=1.2 y=-2
+
+etch nitride start x=0.9 y=-2
+etch cont x=0.9 y=2 
+etch cont x=1.2 y=2 
+etch done x=1.2 y=-2
+
+#for fox inbtn 2 devicies
+etch photoresist start x=2.2 y=-2
+etch cont x=2.2 y=2 
+etch cont x=2.8 y=2 
+etch done x=2.8 y=-2
+
+etch nitride start x=2.2 y=-2
+etch cont x=2.2 y=2 
+etch cont x=2.8 y=2 
+etch done x=2.8 y=-2
+#for tie window
+etch photoresist start x=3.8 y=-2
+etch cont x=3.8 y=2 
+etch cont x=4.1 y=2 
+etch done x=4.1 y=-2
+
+etch nitride start x=3.8 y=-2
+etch cont x=3.8 y=2 
+etch cont x=4.1 y=2 
+etch done x=4.1 y=-2
+
+
+
+# 
+etch photoresist all 
+
+
+structure outf=anelex28_100.str 
+
+method grid.oxide=0.05
+
+structure outf=anelex28_99.str 
+diffuse temp=1000 time=20 wet
+
+structure outf=anelex28_98.str 
+strip nitride
+
+structure outf=anelex28_97.str 
+etch oxide dry thick=0.02
+structure outf=anelex28_96.str 
+
+diffuse temp=900 time=10 dry
+
+structure outf=anelex28_95.str 
+
+

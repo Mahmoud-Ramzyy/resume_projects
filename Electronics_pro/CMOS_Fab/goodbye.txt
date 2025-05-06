@@ -1,0 +1,275 @@
+
+go athena 
+set scalling=3
+
+#define and use a global shrnk variable...
+
+line x loc=0*$scalling spac=0.1
+line x loc=5*$scalling  spac=0.1
+
+line y loc=0 spac=0.1
+line y loc=1 spac=1
+line y loc=2 spac=2
+
+
+
+# step 1 make p-mos wafer
+init silicon boron resistivity=10 orientation=100
+
+# #preparing for N-well
+
+# step 2 make thin buffer 
+deposit oxide thick=0.01 divisions= 1
+
+# step 3 nitride deposition 
+ 
+deposit nitride thick=0.15 divisions= 5
+# step 4 photo resist
+deposit photoresist thick=0.5 divisions=2 
+#step 5 develop PR
+etch photoresist right p1.x=2.5*$scalling 
+# step 5 etch nitride 
+etch nitride right p1.x=2.5*$scalling 
+# step 6 n-well implant
+implant phosphor dose=9.5e12 energy=150 pear
+
+
+strip 
+
+# step 7 locos mask 
+diffus time=30 minutes temp=1000 weto2 
+
+#step 8 etch nitride 
+etch nitride left p1.x=2*$scalling  
+
+# step 9 p-well implant 
+implant boron dose=2.0e13 energy=50 pear
+
+# step 10 wells drive-in 
+diffus time=120 minutes temp=1200 nitro press=1 
+
+#  step 11 etch oxide 
+
+etch oxide all 
+
+# step 12 pad thermal oxide  
+deposit oxide thick=0.01 divisions=1 
+
+# step 13 nitride deposition 
+deposit nitride thick=0.15 divisions= 2
+
+# mask 2 
+deposit photoresist thick=0.5 divisions=2 
+#”›ÀÕ Ì
+#step 14 & step 15
+
+##window of mask 2
+etch photoresist left p1.x=0.2*$scalling 
+etch photoresist right p1.x=4.8*$scalling 
+
+etch nitride left p1.x=0.2*$scalling 
+etch nitride right p1.x=4.8*$scalling 
+
+#for tie window
+etch photoresist start x=0.9*$scalling  y=-2
+etch cont x=0.9*$scalling  y=2 
+etch cont x=1.2*$scalling  y=2 
+etch done x=1.2*$scalling  y=-2
+
+etch nitride start x=0.9*$scalling  y=-2
+etch cont x=0.9*$scalling  y=2 
+etch cont x=1.2*$scalling  y=2 
+etch done x=1.2*$scalling  y=-2
+
+#for fox inbtn 2 devicies
+etch photoresist start x=2.3*$scalling  y=-2
+etch cont x=2*$scalling  y=2 
+etch cont x=2.8*$scalling  y=2 
+etch done x=2.8*$scalling  y=-2
+
+etch nitride start x=2.3*$scalling  y=-2
+etch cont x=2*$scalling  y=2 
+etch cont x=2.8*$scalling  y=2 
+etch done x=2.8*$scalling  y=-2
+#for tie window
+etch photoresist start x=3.8*$scalling  y=-2
+etch cont x=3.8*$scalling  y=2 
+etch cont x=4.1*$scalling  y=2 
+etch done x=4.1*$scalling  y=-2
+
+etch nitride start x=3.8*$scalling  y=-2
+etch cont x=3.8*$scalling  y=2 
+etch cont x=4.1*$scalling  y=2 
+etch done x=4.1*$scalling  y=-2
+etch photoresist all 
+
+structure outf=anelex28_0.str 
+
+
+#step16 mask 3
+deposit photoresist thick=0.5 divisions=2 
+# develope PR
+etch photoresist left p1.x=2.5*$scalling  
+
+# step 17 channel stopper
+implant boron dose=8.0e13 energy=100 pear
+
+strip
+
+method grid.oxide=0.05
+
+#structure outf=anelex28_99.str 
+diffuse temp=1200 time=30 wet
+
+structure outf=anelex28_98.str 
+strip nitride
+
+structure outf=anelex28_97.str 
+etch oxide dry thick=0.02
+structure outf=anelex28_96.str 
+#step 20
+diffuse temp=900 time=10 dry
+
+structure outf=anelex28_95.str 
+
+
+# step 21
+implant boron dose=7e11 energy=60 pear
+
+
+# step 22 photo resist (mask4)
+deposit photoresist thick=0.5 divisions=2 
+#step 22 develop PR
+etch photoresist right p1.x=2.5*$scalling  
+
+# step 23
+implant boron dose=2.6e12 energy=60 pear
+
+
+strip
+# step 24
+etch oxide dry thick=0.02 
+# #step 25 gate oxide
+diffus time=1 minutes temp=1050 dryo2 press=1 hcl.pc=3 
+
+#
+extract name="tox" thickness material="SiO~2" mat.occno=1 x.val=1.5*$scalling 
+
+# step 26 poly dep
+deposit polysilicon thick=0.6 divisions=10 
+
+#…‘”‰####
+#mask#4
+deposit photoresist thick=0.5 divisions=2 
+# P-gate
+etch photoresist left p1.x=4.825
+etch polysilicon left p1.x=4.825
+
+# N-gate
+etch photoresist right p1.x=10.175
+etch polysilicon  right p1.x=10.175 
+# in btn P&N-gate mask
+etch photoresist start x=5.175  y=-2 
+etch cont x=9.825  y=-2 
+etch cont x=9.825  y=2 
+etch done x=5.175  y=2 
+
+etch polysilicon start x=5.175  y=-2 
+etch cont x=9.825  y=-2 
+etch cont x=9.825  y=2 
+etch done x=5.175  y=2 
+
+strip
+
+#…‘”‰####
+#mask#6
+deposit photoresist thick=0.5 divisions=2 
+
+# N-select mask
+etch photoresist start x=1*$scalling y=-2 
+etch cont x=2.5*$scalling y=-2 
+etch cont x=2.5*$scalling y= 2 
+etch done x=1*$scalling y= 2
+
+etch photoresist start x=12 y=-2 
+etch cont x=14.5 y=-2 
+etch cont x=14.5 y= 2 
+etch done x=12 y= 2
+
+# N D/S LDD
+implant phosphor dose=2.5e13 energy=60 tilt=10 fullrot crystal 
+
+
+
+strip
+
+#mask#7
+deposit photoresist thick=0.5 divisions=2 
+
+# P-select mask
+etch photoresist left p1.x=1*$scalling
+
+etch photoresist start x=2.5*$scalling y=-2 
+etch cont x=12 y=-2 
+etch cont x=12 y= 2 
+etch done x=2.5*$scalling y= 2
+
+# P  D/S LDD
+implant boron dose=4e13 energy=50 tilt=10 fullrot crystal 
+
+strip
+
+# preparing to create a spacer
+deposit nitride thick=0.4 divisions=10
+# Spacer nitride  Etch
+etch nitride dry thick=0.4 
+
+deposit photoresist thick=0.5 divisions=2 
+
+# N-select mask again
+etch photoresist start x=1*$scalling y=-2 
+etch cont x=2.5*$scalling y=-2 
+etch cont x=2.5*$scalling y= 2 
+etch done x=1*$scalling y= 2
+
+etch photoresist start x=12 y=-2 
+etch cont x=14.5 y=-2 
+etch cont x=14.5 y= 2 
+etch done x=12 y= 2
+
+# N Deep D/S 
+implant phosphor dose=2e15 energy=60 tilt=10 fullrot crystal 
+
+strip
+
+deposit photoresist thick=0.5 divisions=2 
+
+# P-select mask again
+etch photoresist left p1.x=1*$scalling
+
+etch photoresist start x=2.5*$scalling y=-2 
+etch cont x=12 y=-2 
+etch cont x=12 y= 2 
+etch done x=2.5*$scalling y= 2
+
+# P  Deep D/S 
+implant boron dose=2e15 energy=50 tilt=10 fullrot crystal 
+
+strip
+
+
+# step 46 etch damage oxide  
+
+etch oxide dry thick=0.01 
+structure outf=anelex28_0.str
+
+
+
+
+
+
+
+
+
+
+

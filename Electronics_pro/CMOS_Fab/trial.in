@@ -1,0 +1,15 @@
+# Non-Uniform Grid (0.6um x 0.8um)
+line x loc=0.00 spac=0.10
+line x loc=0.2 spac=0.01
+line x loc=0.6 spac=0.01
+
+line y loc=0.00 spac=0.008
+line y loc=0.2 spac=0.01
+line y loc=0.5 spac=0.05
+line y loc=0.8 spac=0.15
+# Initial Silicon Structure with <100> Orientation
+init silicon c.boron=1.0e14 orientation=100 two.d
+# Gate Oxidation
+diffus time=11 minutes temp=950 dryo2 press=1 hcl.pc=3 
+#
+extract name="tox" thickness material="SiO~2" mat.occno=1 x.val=0.3
